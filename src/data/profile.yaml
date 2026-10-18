@@ -1,84 +1,132 @@
-# ─────────────────────────────────────────────────────────────
-#  The site's main settings. Change anything here and push.
-# ─────────────────────────────────────────────────────────────
 name: Nikhil Bhatt
 short: Nikhil
-roles: [AI Engineer, Full-Stack Engineer]
+roles:
+  - AI Engineer
+  - Full-Stack Engineer
 location: Delhi NCR, India
 availability: Open to freelance projects and AI/ML roles · weekend calls
 email: nikhilbhatt6980@gmail.com
-
-# The line under the giant name on the home page. Keep it short.
 tagline: I build AI agents that do real work, and the software around them.
+about: >
+  I'm an AI/ML engineer with a full-stack background. Right now I'm building the
+  agent layer
 
-# Shown in the "About" section. Markdown is fine.
-about: |
-  I'm an AI/ML engineer with a full-stack background. Right now I'm building the agent layer
-  and the AI interview product at **Hiring Bazaar AI** (part-time), with real-time voice
-  interviews on LiveKit. Before that I was the first engineer at **LyteHire AI** and built the
-  product from an empty repo: resume parsing with RAG and pgvector, an email agent on Google
-  ADK that loops in a human when it should, and a voice interview agent with sub-1.2s
+  and the AI interview product at **Hiring Bazaar AI** (part-time), with
+  real-time voice
+
+  interviews on LiveKit. Before that I was the first engineer at **LyteHire AI**
+  and built the
+
+  product from an empty repo: resume parsing with RAG and pgvector, an email
+  agent on Google
+
+  ADK that loops in a human when it should, and a voice interview agent with
+  sub-1.2s
+
   turn-taking.
 
+
   I also take on freelance work: AI agents, voice AI and full-stack products.
+
   [Hire me](/hire/).
 
-  Outside work I build small, fast native tools for Windows (Rust and C++, no runtimes, a
-  few MB each), take apart software I like with reverse-engineering tools to learn how it
-  works, and watch a lot of movies. Probably too many.
 
-# Short "currently" status, shown on the home page. Update whenever.
+  Outside work I build small, fast native tools for Windows (Rust and C++, no
+  runtimes, a
+
+  few MB each), take apart software I like with reverse-engineering tools to
+  learn how it
+
+  works, and watch a lot of movies. Probably too many.
 now:
   - Building AI interview agents on LiveKit at Hiring Bazaar AI
   - Taking on freelance AI & full-stack projects
   - Pursuing an MCA at IGNOU
-
-# Little numbers on the home page.
 stats:
-  - { value: '1+', label: 'year shipping AI in production' }
-  - { value: '6', label: 'products released' }
-  - { value: '270+', label: 'LeetCode problems' }
-  - { value: '9.3', label: 'BCA GPA' }
-
-resume: /resume.pdf # replace public/resume.pdf to update the download
-
-# The "end credits" roll in the footer of every page. Add, remove or reorder lines freely.
+  - value: 1+
+    label: year shipping AI in production
+  - value: "6"
+    label: products released
+  - value: 270+
+    label: LeetCode problems
+  - value: "9.3"
+    label: BCA GPA
+resume: /resume.pdf
 credits:
-  - { role: Directed by, name: Nikhil Bhatt }
-  - { role: Written in, name: Rust · C++ · TypeScript · Python · Go }
-  - { role: AI agents, name: Google ADK · LangGraph · LiveKit }
-  - { role: Production design, name: 'Astro, CSS, and too much film grain' }
-  - { role: Shot on location in, name: 'Delhi NCR, India' }
-  - { role: Catering, name: 'Chai, mostly' }
-
-# The 3-2-1 film-leader countdown on the home page.
+  - role: Directed by
+    name: Nikhil Bhatt
+  - role: Written in
+    name: Rust · C++ · TypeScript · Python · Go
+  - role: AI agents
+    name: Google ADK · LangGraph · LiveKit
+  - role: Production design
+    name: Astro, CSS, and too much film grain
+  - role: Shot on location in
+    name: Delhi NCR, India
+  - role: Catering
+    name: Diet Coke, mostly
 intro:
-  enabled: true # false = never play it automatically
-  everyVisit: false # true = play on every visit, not once per browser tab
-  respectReducedMotion: true # false = play even when the visitor's OS has animations turned off
-  count: 3 # start number
-  beatMs: 700 # milliseconds per number
+  enabled: true
+  everyVisit: false
+  respectReducedMotion: true
+  count: 3
+  beatMs: 700
   hint: Click or press any key to skip
-  # Anyone can replay it with the button in the footer, or by adding ?intro to the URL.
-
 links:
   github: https://github.com/NikhilBhatt-15
   linkedin: https://www.linkedin.com/in/nikhilbhatt-se
-  # leetcode: https://leetcode.com/u/your-handle   ← uncomment and fill in
-  # letterboxd: https://letterboxd.com/your-handle ← uncomment and fill in
-
 skills:
   - group: AI & agents
-    items: [Google ADK, LangChain, LangGraph, LiveKit Agents, Voice AI, Tool calling, Planning agents, Agent memory, Human-in-the-loop]
+    items:
+      - Google ADK
+      - LangChain
+      - LangGraph
+      - LiveKit Agents
+      - Voice AI
+      - Tool calling
+      - Planning agents
+      - Agent memory
+      - Human-in-the-loop
   - group: LLMs & RAG
-    items: [Gemini, OpenAI, Claude, Prompt engineering, RAG pipelines, Embeddings, pgvector, Structured extraction]
+    items:
+      - Gemini
+      - OpenAI
+      - Claude
+      - Prompt engineering
+      - RAG pipelines
+      - Embeddings
+      - pgvector
+      - Structured extraction
   - group: Full stack
-    items: [React 18, Next.js, TypeScript, Node.js, Express, Python, FastAPI, WebSockets]
+    items:
+      - React 18
+      - Next.js
+      - TypeScript
+      - Node.js
+      - Express
+      - Python
+      - FastAPI
+      - WebSockets
   - group: Data & infra
-    items: [PostgreSQL, Redis, MongoDB, Docker, GCP Cloud Run, GitHub Actions, Vercel]
+    items:
+      - PostgreSQL
+      - Redis
+      - MongoDB
+      - Docker
+      - GCP Cloud Run
+      - GitHub Actions
+      - Vercel
   - group: Native & tooling
-    items: [Rust, C++, Win32, Go, Reverse engineering]
-
+    items:
+      - Rust
+      - C++
+      - Win32
+      - Go
+      - Reverse engineering
 education:
-  - { school: IGNOU, degree: Master of Computer Applications (MCA), years: 2025 – 2027 }
-  - { school: Maharaja Surajmal Institute, degree: 'Bachelor of Computer Applications (BCA) · GPA 9.3', years: 2022 – 2025 }
+  - school: IGNOU
+    degree: Master of Computer Applications (MCA)
+    years: 2025 – 2027
+  - school: Maharaja Surajmal Institute
+    degree: Bachelor of Computer Applications (BCA) · GPA 9.3
+    years: 2022 – 2025
