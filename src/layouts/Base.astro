@@ -235,10 +235,13 @@ const ogImage = new URL(image ?? url('/og.jpg'), Astro.site);
       }
 
       /* Timecode, bottom-left, like a monitor overlay. */
+      /* Runs up the left edge like the edge markings on a film strip, clear of content. */
       .hud {
         position: fixed;
-        left: var(--gutter);
-        bottom: 18px;
+        left: 14px;
+        bottom: 24px;
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
         z-index: 40;
         display: flex;
         gap: 12px;
@@ -254,7 +257,7 @@ const ogImage = new URL(image ?? url('/og.jpg'), Astro.site);
         border-radius: 50%;
         background: var(--red);
       }
-      @media (max-width: 640px) {
+      @media (max-width: 1100px) {
         .hud {
           display: none;
         }
