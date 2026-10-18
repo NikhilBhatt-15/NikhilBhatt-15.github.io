@@ -1,0 +1,33 @@
+---
+import Base from '../../layouts/Base.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import { getProducts } from '../../lib/content';
+
+const products = await getProducts();
+---
+
+<Base title="Products" description="Small, fast Windows tools and full-stack projects by Nikhil Bhatt. Download, install and usage guides.">
+  <section class="wrap">
+    <header class="page-head">
+      <span class="label">Now showing · {products.length} features</span>
+      <h1>The <em>products</em></h1>
+      <p>
+        Things I built because I wanted them to exist. The Windows tools are single native executables: no
+        installer, no runtime, no telemetry. Pick one, read how it works, download it, and verify the SHA-256 if
+        you like.
+      </p>
+    </header>
+    <div class="grid">
+      {products.map((p) => <ProductCard product={p} />)}
+    </div>
+  </section>
+</Base>
+
+<style>
+  .grid {
+    margin-top: 72px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: 56px 32px;
+  }
+</style>

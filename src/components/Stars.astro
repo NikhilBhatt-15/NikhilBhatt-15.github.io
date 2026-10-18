@@ -1,0 +1,45 @@
+---
+interface Props {
+  rating?: number;
+  liked?: boolean;
+  rewatch?: boolean;
+  size?: number;
+}
+const { rating, liked, rewatch, size = 14 } = Astro.props;
+const full = rating ? Math.floor(rating) : 0;
+const half = rating ? rating % 1 !== 0 : false;
+---
+
+<span class="stars" style={`--s:${size}px`}>
+  {
+    rating && (
+      <span class="r" role="img" aria-label={`${rating} out of 5 stars`}>
+        {'★'.repeat(full)}
+        {half && '½'}
+      </span>
+    )
+  }
+  {liked && <span class="like" role="img" aria-label="Liked">♥</span>}
+  {rewatch && <span class="re" role="img" aria-label="Rewatch">↻</span>}
+</span>
+
+<style>
+  .stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--s);
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .r {
+    color: var(--accent);
+    letter-spacing: 0.06em;
+  }
+  .like {
+    color: var(--red);
+  }
+  .re {
+    color: var(--dim);
+  }
+</style>

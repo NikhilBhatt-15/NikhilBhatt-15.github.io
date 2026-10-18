@@ -1,0 +1,235 @@
+---
+import Base from '../layouts/Base.astro';
+import { profile, url, inlineMd, blockMd } from '../lib/data';
+import { getExperience } from '../lib/content';
+
+const experience = await getExperience();
+---
+
+<Base title="Work" description={`${profile.name}: experience, skills and résumé.`}>
+  <section class="wrap">
+    <header class="page-head">
+      <span class="label">The cast · full credits</span>
+      <h1>{profile.short} <em>Bhatt</em></h1>
+      <p>{profile.roles.join(' · ')} · {profile.location}</p>
+    </header>
+
+    <div class="cols">
+      <div class="about prose" set:html={blockMd(profile.about)} />
+      <aside class="side">
+        <a class="btn primary" href={url(profile.resume)} download>Download résumé (PDF)</a>
+        <a class="btn" href={`mailto:${profile.email}`}>Email me</a>
+        <ul class="links">
+          {
+            Object.entries(profile.links).map(([k, v]) => (
+              <li>
+                <a href={v} target="_blank" rel="noopener me">
+                  {k} ↗
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </aside>
+    </div>
+
+    <h2 class="sec">Experience</h2>
+    <ol class="jobs">
+      {
+        experience.map((e) => (
+          <li class="reveal">
+            <div class="when mono">
+              {e.data.start} — {e.data.end}
+              <br />
+              <span class="dim">{e.data.location}</span>
+            </div>
+            <div>
+              <h3>
+                {e.data.role} <span class="serif at">at</span> {e.data.company}
+              </h3>
+              <ul class="points">
+                {e.data.points.map((p) => (
+                  <li set:html={inlineMd(p)} />
+                ))}
+              </ul>
+              <ul class="chips">
+                {e.data.stack.map((s) => (
+                  <li>{s}</li>
+                ))}
+              </ul>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+
+    <h2 class="sec">Skills</h2>
+    <dl class="skills">
+      {
+        profile.skills.map((g) => (
+          <div class="reveal">
+            <dt>{g.group}</dt>
+            <dd>
+              <ul class="chips">
+                {g.items.map((s) => (
+                  <li>{s}</li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+        ))
+      }
+    </dl>
+
+    <h2 class="sec">Education</h2>
+    <ul class="edu">
+      {
+        profile.education.map((e) => (
+          <li>
+            <span class="school">{e.school}</span>
+            <span class="dim">{e.degree}</span>
+            <span class="mono dim yrs">{e.years}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</Base>
+
+<style>
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 64px;
+    margin-top: 64px;
+  }
+  .about :global(p:first-child) {
+    font-size: 22px;
+    color: var(--ink);
+  }
+  .side {
+    display: grid;
+    gap: 10px;
+    align-content: start;
+  }
+  .side .btn {
+    justify-content: center;
+  }
+  .links {
+    list-style: none;
+    padding: 0;
+    margin: 14px 0 0;
+    display: grid;
+    gap: 8px;
+  }
+  .links a {
+    font: 500 12px var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--dim);
+    text-decoration: none;
+  }
+  @media (max-width: 820px) {
+    .cols {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+  }
+  .sec {
+    font-size: clamp(36px, 5vw, 64px);
+    letter-spacing: -0.045em;
+    margin: 120px 0 36px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .jobs {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 64px;
+  }
+  .jobs > li {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 24px;
+  }
+  .when {
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--faint);
+  }
+  h3 {
+    margin: 0 0 14px;
+    font-size: clamp(22px, 2.6vw, 32px);
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+  .at {
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .points {
+    padding-left: 1.1em;
+    margin: 0 0 18px;
+    color: var(--dim);
+    max-width: 78ch;
+  }
+  .points li {
+    margin: 8px 0;
+  }
+  .points li::marker {
+    color: var(--accent);
+  }
+  @media (max-width: 700px) {
+    .jobs > li {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+  }
+  .skills {
+    display: grid;
+    gap: 0;
+    margin: 0;
+  }
+  .skills div {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 24px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .skills dt {
+    font-weight: 600;
+  }
+  .skills dd {
+    margin: 0;
+  }
+  @media (max-width: 700px) {
+    .skills div {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+  }
+  .edu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .edu li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 24px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .school {
+    font-weight: 700;
+    font-size: 19px;
+  }
+  .yrs {
+    grid-row: 1;
+    grid-column: 2;
+    font-size: 12px;
+  }
+</style>

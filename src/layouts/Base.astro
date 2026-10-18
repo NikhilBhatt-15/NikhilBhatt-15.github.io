@@ -1,0 +1,443 @@
+---
+import '../styles/global.css';
+import { profile, url } from '../lib/data';
+import Credits from '../components/Credits.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  leader?: boolean; // play the film-leader countdown (home page only)
+}
+const { title, description = profile.tagline, image, leader = false } = Astro.props;
+const fullTitle = title ? `${title} · ${profile.name}` : `${profile.name}: ${profile.roles.join(' & ')}`;
+const path = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(/\/$/, ''), '') || '/';
+const nav = [
+  ['Products', '/products/'],
+  ['Work', '/about/'],
+  ['Early works', '/projects/'],
+  ['Movies', '/movies/'],
+  ['Notes', '/notes/'],
+];
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL(image ?? url('/og.jpg'), Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={url('/favicon.svg')} type="image/svg+xml" />
+    <link rel="alternate" type="application/rss+xml" title={`${profile.name}: notes`} href={url('/rss.xml')} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0b0a09" />
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    {
+      leader && (
+        <div class="leader" id="leader" aria-hidden="true">
+          <div class="leader-ring">
+            <span class="leader-sweep" />
+            <span class="leader-num">3</span>
+          </div>
+          <span class="leader-hint mono">Click or press any key to skip</span>
+        </div>
+      )
+    }
+
+    <div class="spot" aria-hidden="true"></div>
+
+    <header class="nav">
+      <div class="nav-in">
+        <a class="brand" href={url('/')} aria-label={`${profile.name}, home`}>
+          <span class="rec" aria-hidden="true"></span>
+          <span class="brand-name">{profile.name}</span>
+        </a>
+        <nav aria-label="Main">
+          <ul>
+            {
+              nav.map(([label, href]) => (
+                <li>
+                  <a href={url(href)} aria-current={path.startsWith(href) ? 'page' : undefined}>
+                    {label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+        <a class="nav-cta" href={url(profile.resume)} download>Résumé ↓</a>
+        <button class="menu" aria-expanded="false" aria-controls="mobile-nav" aria-label="Menu">
+          <span></span><span></span>
+        </button>
+      </div>
+      <div class="mobile-nav" id="mobile-nav" hidden>
+        {nav.map(([label, href]) => <a href={url(href)}>{label}</a>)}
+        <a href={url(profile.resume)} download>Résumé ↓</a>
+      </div>
+    </header>
+
+    <main id="main">
+      <slot />
+    </main>
+
+    <Credits />
+
+    <div class="hud mono" aria-hidden="true">
+      <span class="hud-dot"></span>
+      <span id="hud-reel">REEL 00</span>
+      <span id="hud-tc">00:00:00:00</span>
+    </div>
+
+    <style>
+      .nav {
+        position: fixed;
+        inset: 0 0 auto;
+        z-index: 50;
+        transition: background 0.4s, backdrop-filter 0.4s, border-color 0.4s;
+        border-bottom: 1px solid transparent;
+      }
+      .nav.scrolled {
+        background: rgb(11 10 9 / 0.72);
+        backdrop-filter: blur(14px) saturate(1.2);
+        border-color: var(--line);
+      }
+      .nav-in {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 18px var(--gutter);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin-right: auto;
+      }
+      .rec {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--red);
+        box-shadow: 0 0 12px var(--red);
+        animation: blink 2s steps(1) infinite;
+      }
+      @keyframes blink {
+        50% { opacity: 0.25; }
+      }
+      nav ul {
+        display: flex;
+        gap: 26px;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      nav a,
+      .nav-cta {
+        font: 500 12px/1 var(--mono);
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: var(--dim);
+      }
+      nav a[aria-current],
+      nav a:hover {
+        color: var(--ink);
+      }
+      .nav-cta {
+        color: var(--accent);
+        border: 1px solid rgb(255 181 71 / 0.4);
+        padding: 9px 13px;
+        border-radius: 999px;
+      }
+      .nav-cta:hover {
+        background: var(--accent);
+        color: var(--accent-ink);
+      }
+      .menu {
+        display: none;
+        background: none;
+        border: 0;
+        width: 40px;
+        height: 40px;
+        padding: 10px;
+        cursor: pointer;
+      }
+      .menu span {
+        display: block;
+        height: 1.5px;
+        background: var(--ink);
+        margin: 6px 0;
+        transition: transform 0.3s var(--ease);
+      }
+      .menu[aria-expanded='true'] span:first-child {
+        transform: translateY(3.75px) rotate(45deg);
+      }
+      .menu[aria-expanded='true'] span:last-child {
+        transform: translateY(-3.75px) rotate(-45deg);
+      }
+      .mobile-nav[hidden] {
+        display: none;
+      }
+      .mobile-nav {
+        display: grid;
+        padding: 8px var(--gutter) 28px;
+        background: rgb(11 10 9 / 0.96);
+        border-bottom: 1px solid var(--line);
+      }
+      .mobile-nav a {
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        text-decoration: none;
+        padding: 6px 0;
+      }
+      @media (max-width: 860px) {
+        nav,
+        .nav-cta {
+          display: none;
+        }
+        .menu {
+          display: block;
+        }
+      }
+
+      /* Projector light that follows the pointer. */
+      .spot {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        background: radial-gradient(600px circle at var(--x, 50%) var(--y, -20%), rgb(255 181 71 / 0.06), transparent 70%);
+      }
+      main {
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Timecode, bottom-left, like a monitor overlay. */
+      .hud {
+        position: fixed;
+        left: var(--gutter);
+        bottom: 18px;
+        z-index: 40;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        font-size: 11px;
+        color: var(--faint);
+        pointer-events: none;
+        font-variant-numeric: tabular-nums;
+      }
+      .hud-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--red);
+      }
+      @media (max-width: 640px) {
+        .hud {
+          display: none;
+        }
+      }
+
+      /* Academy-leader countdown. */
+      .leader {
+        display: none;
+      }
+      :global(html.js) .leader.play {
+        display: grid;
+        position: fixed;
+        inset: 0;
+        z-index: 300;
+        place-items: center;
+        background: #0e0d0b;
+        transition: opacity 0.5s, visibility 0.5s;
+      }
+      .leader.done {
+        opacity: 0;
+        visibility: hidden;
+      }
+      .leader-ring {
+        position: relative;
+        width: min(62vmin, 440px);
+        aspect-ratio: 1;
+        border-radius: 50%;
+        border: 2px solid rgb(241 235 225 / 0.6);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        box-shadow: 0 0 0 14px #0e0d0b, 0 0 0 16px rgb(241 235 225 / 0.25);
+      }
+      .leader-ring::before,
+      .leader-ring::after {
+        content: '';
+        position: absolute;
+        background: rgb(241 235 225 / 0.35);
+      }
+      .leader-ring::before {
+        inset: 50% -10% auto;
+        height: 1px;
+      }
+      .leader-ring::after {
+        inset: -10% auto auto 50%;
+        width: 1px;
+        height: 120%;
+      }
+      .leader-sweep {
+        position: absolute;
+        inset: 0;
+        background: conic-gradient(rgb(241 235 225 / 0.16) var(--a, 0deg), transparent 0);
+      }
+      .leader-num {
+        position: relative;
+        font: 800 min(36vmin, 260px) / 1 var(--display);
+        letter-spacing: -0.06em;
+        color: var(--ink);
+      }
+      .leader-hint {
+        position: absolute;
+        bottom: 28px;
+        font-size: 11px;
+        color: var(--faint);
+      }
+    </style>
+
+    <script>
+      // ── Nav state + mobile menu
+      const nav = document.querySelector('.nav')!;
+      const menu = document.querySelector<HTMLButtonElement>('.menu')!;
+      const mobile = document.getElementById('mobile-nav')!;
+      menu.addEventListener('click', () => {
+        const open = menu.getAttribute('aria-expanded') !== 'true';
+        menu.setAttribute('aria-expanded', String(open));
+        mobile.hidden = !open;
+      });
+
+      // ── Timecode HUD: the page is a reel; scrolling plays it.
+      const tc = document.getElementById('hud-tc')!;
+      const reelEl = document.getElementById('hud-reel')!;
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const onScroll = () => {
+        const y = window.scrollY;
+        nav.classList.toggle('scrolled', y > 20);
+        const secs = y / 36;
+        const f = Math.floor((secs % 1) * 24);
+        const s = Math.floor(secs);
+        tc.textContent = `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}:${pad(f)}`;
+      };
+      addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+      reelEl.textContent = document.title.split(' · ')[0].toUpperCase().slice(0, 28);
+      const reels = document.querySelectorAll<HTMLElement>('[data-reel]:not(footer)');
+      if (reels.length) {
+        const io = new IntersectionObserver(
+          (es) => es.forEach((e) => e.isIntersecting && (reelEl.textContent = `REEL ${e.target.getAttribute('data-reel')}`)),
+          { rootMargin: '-45% 0px -50% 0px' },
+        );
+        reels.forEach((r) => io.observe(r));
+      }
+
+      // ── Projector light follows pointer
+      const spot = document.querySelector<HTMLElement>('.spot')!;
+      addEventListener('pointermove', (e) => {
+        spot.style.setProperty('--x', `${e.clientX}px`);
+        spot.style.setProperty('--y', `${e.clientY}px`);
+      });
+
+      // ── Reveal on scroll
+      const rev = new IntersectionObserver(
+        (es) =>
+          es.forEach((e) => {
+            if (e.isIntersecting) {
+              e.target.classList.add('in');
+              rev.unobserve(e.target);
+            }
+          }),
+        { rootMargin: '0px 0px -8% 0px' },
+      );
+      document.querySelectorAll('.reveal').forEach((el) => rev.observe(el));
+
+      // ── Fit-to-width headlines (the A24 trick): scale font so the text fills its box.
+      const fitOne = (el: HTMLElement) => {
+        el.style.fontSize = '100px';
+        const w = el.parentElement!.getBoundingClientRect().width;
+        const tw = el.getBoundingClientRect().width;
+        if (w && tw) el.style.fontSize = `${Math.floor((98.5 * w) / tw)}px`;
+      };
+      const fits = document.querySelectorAll<HTMLElement>('[data-fit]');
+      const widths = new WeakMap<Element, number>();
+      const ro = new ResizeObserver((es) =>
+        es.forEach((e) => {
+          // Only width matters; refitting changes height, which would otherwise loop.
+          if (widths.get(e.target) === e.contentRect.width) return;
+          widths.set(e.target, e.contentRect.width);
+          fitOne(e.target.firstElementChild as HTMLElement);
+        }),
+      );
+      fits.forEach((el) => ro.observe(el.parentElement!));
+      const refit = () => fits.forEach(fitOne);
+      document.fonts.ready.then(refit);
+      document.fonts.addEventListener('loadingdone', refit);
+      document.fonts.load('900 100px "Inter Tight Variable"').then(refit, () => {});
+
+      // ── Leader countdown, once per session, never with reduced motion
+      const leader = document.getElementById('leader');
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let seen = false;
+      try {
+        seen = sessionStorage.getItem('leader') === '1';
+        sessionStorage.setItem('leader', '1');
+      } catch {}
+      if (leader && !seen && !reduce) {
+        leader.classList.add('play');
+        document.documentElement.classList.add('leader-on');
+        const num = leader.querySelector('.leader-num')!;
+        const sweep = leader.querySelector<HTMLElement>('.leader-sweep')!;
+        const start = performance.now();
+        const dur = 700;
+        let raf = 0;
+        const end = () => {
+          cancelAnimationFrame(raf);
+          leader.classList.add('done');
+          document.documentElement.classList.remove('leader-on');
+          document.documentElement.classList.add('rolled');
+          removeEventListener('keydown', end);
+          leader.removeEventListener('click', end);
+        };
+        const tick = (t: number) => {
+          const el = t - start;
+          const n = 3 - Math.floor(el / dur);
+          if (n < 1) return end();
+          num.textContent = String(n);
+          sweep.style.setProperty('--a', `${((el % dur) / dur) * 360}deg`);
+          raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        addEventListener('keydown', end);
+        leader.addEventListener('click', end);
+      } else {
+        document.documentElement.classList.add('rolled');
+      }
+    </script>
+  </body>
+</html>

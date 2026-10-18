@@ -1,0 +1,68 @@
+---
+// A movie poster: the real one when the entry has a URL, otherwise a typographic stand-in.
+interface Props {
+  title: string;
+  year: number;
+  director?: string;
+  poster?: string;
+  eager?: boolean;
+}
+const { title, year, director, poster, eager = false } = Astro.props;
+let h = 0;
+for (const ch of title) h = (h * 31 + ch.charCodeAt(0)) % 360;
+---
+
+<div class="mp" style={`--h:${h}`}>
+  {
+    poster ? (
+      <img src={poster} alt={`${title} (${year}) poster`} loading={eager ? 'eager' : 'lazy'} decoding="async" referrerpolicy="no-referrer" />
+    ) : (
+      <div class="fallback" role="img" aria-label={`${title} (${year})`}>
+        <span class="y mono">{year}</span>
+        <span class="t">{title}</span>
+        {director && <span class="d serif">dir. {director}</span>}
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .mp {
+    aspect-ratio: 2 / 3;
+    border-radius: 5px;
+    overflow: hidden;
+    background: var(--bg-3);
+    box-shadow: 0 0 0 1px var(--line), 0 18px 40px -24px rgb(0 0 0 / 0.9);
+  }
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .fallback {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 14%  10%;
+    background:
+      radial-gradient(circle at 30% 20%, hsl(var(--h) 60% 45% / 0.55), transparent 60%),
+      linear-gradient(160deg, hsl(var(--h) 35% 16%), hsl(calc(var(--h) + 40) 30% 8%));
+  }
+  .y {
+    font-size: 10px;
+    color: rgb(255 255 255 / 0.6);
+  }
+  .t {
+    font-weight: 800;
+    font-size: clamp(16px, 2.2vw, 26px);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  .d {
+    font-size: 14px;
+    color: rgb(255 255 255 / 0.7);
+  }
+</style>

@@ -1,0 +1,180 @@
+---
+// A generated one-sheet movie poster for a product. Pure SVG, so it is sharp at any size.
+interface Props {
+  name: string;
+  tagline: string;
+  platform: string;
+  language: string;
+  genre: string;
+  poster: { bg: string; ink: string; accent: string; motif: string };
+  version?: string;
+  status?: string; // e.g. "NOW SHOWING" / "COMING SOON"
+  class?: string;
+}
+const { name, tagline, platform, language, genre, poster, version, status = 'NOW SHOWING', class: cls } = Astro.props;
+const { bg, ink, accent, motif } = poster;
+const id = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+const big = name.toUpperCase();
+// Rough advance widths (em) for Inter Tight 800 caps, so long names shrink to fit 352px.
+const em = [...big].reduce((s, c) => s + (/[MW]/.test(c) ? 0.9 : /[IJ1]/.test(c) ? 0.3 : /[LTFEPSZ]/.test(c) ? 0.62 : /[ \-]/.test(c) ? 0.28 : 0.72) - 0.03, 0);
+const nameSize = Math.min(118, Math.floor(344 / em));
+const titleY = 512;
+const taglineY = titleY - nameSize * 0.74 - 16;
+const billing = `A NIKHIL BHATT PRODUCTION · WRITTEN IN ${language.toUpperCase()} · ${genre.toUpperCase()} · NO RUNTIME REQUIRED · ${version ? `RELEASE ${version.toUpperCase()}` : 'IN DEVELOPMENT'}`;
+const seats = Array.from({ length: 7 * 9 }, (_, i) => ({ r: Math.floor(i / 9), c: i % 9 }));
+const picked = new Set([30, 31, 32]);
+---
+
+<svg class:list={['poster', cls]} viewBox="0 0 400 600" role="img" aria-label={`${name} poster: ${tagline}`}>
+  <defs>
+    <radialGradient id={`glow-${id}`} cx="50%" cy="38%" r="60%">
+      <stop offset="0" stop-color={accent} stop-opacity="0.38"></stop>
+      <stop offset="1" stop-color={accent} stop-opacity="0"></stop>
+    </radialGradient>
+    <linearGradient id={`fade-${id}`} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0.45" stop-color={bg} stop-opacity="0"></stop>
+      <stop offset="0.82" stop-color={bg} stop-opacity="1"></stop>
+    </linearGradient>
+    <filter id={`n-${id}`}>
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"></feTurbulence>
+      <feColorMatrix values="0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.35 0"></feColorMatrix>
+      <feComposite operator="in" in2="SourceGraphic"></feComposite>
+    </filter>
+  </defs>
+
+  <rect width="400" height="600" fill={bg}></rect>
+  <rect width="400" height="600" fill={`url(#glow-${id})`}></rect>
+
+  <g class="motif" fill="none" stroke={ink} stroke-linecap="round" stroke-linejoin="round">
+    {
+      motif === 'stack' && (
+        <g>
+          {[0, 1, 2, 3].map((i) => (
+            <g transform={`translate(${118 + i * 10} ${70 + i * 34}) rotate(${-9 + i * 5} 82 60)`}>
+              <rect width="164" height="118" rx="12" fill={i === 3 ? accent : bg} stroke={i === 3 ? accent : ink} stroke-opacity={0.25 + i * 0.2} stroke-width="2" />
+              {[0, 1, 2].map((l) => (
+                <rect x="18" y={26 + l * 24} width={l === 2 ? 70 : 128} height="8" rx="4" fill={i === 3 ? bg : ink} fill-opacity={i === 3 ? 0.8 : 0.18} stroke="none" />
+              ))}
+            </g>
+          ))}
+        </g>
+      )
+    }
+    {
+      motif === 'lens' && (
+        <g>
+          {[150, 118, 86].map((r, i) => (
+            <circle cx="190" cy="196" r={r} stroke-opacity={0.12 + i * 0.12} stroke-width="1.5" />
+          ))}
+          <circle cx="190" cy="196" r="70" stroke={accent} stroke-width="14" />
+          <circle cx="190" cy="196" r="56" fill={accent} fill-opacity="0.12" stroke="none" />
+          <path d="M240 246 L300 306" stroke={accent} stroke-width="22" />
+          <path d="M160 170 a40 40 0 0 1 34 -16" stroke={ink} stroke-width="6" stroke-opacity="0.8" />
+        </g>
+      )
+    }
+    {
+      motif === 'nib' && (
+        <g transform="translate(200 210) rotate(-28)">
+          <path d="M0 -150 C 58 -88 70 -24 46 52 L 18 96 L 0 150 L -18 96 L -46 52 C -70 -24 -58 -88 0 -150 Z" fill={ink} stroke="none" />
+          <path d="M0 -10 L0 150" stroke={bg} stroke-width="4" />
+          <circle cx="0" cy="-22" r="14" fill={bg} stroke="none" />
+          <path d="M-46 52 L46 52" stroke={bg} stroke-width="3" stroke-opacity="0.6" />
+          <path d="M0 150 C 30 190 80 200 130 186" stroke={accent} stroke-width="6" />
+        </g>
+      )
+    }
+    {
+      motif === 'runner' && (
+        <g>
+          <polyline
+            points="20,330 60,322 90,326 120,300 150,312 180,268 210,284 240,236 270,252 300,206 330,224 380,182"
+            stroke={accent}
+            stroke-width="5"
+          />
+          <polyline points="20,330 60,322 90,326 120,300 150,312 180,268 210,284 240,236 270,252 300,206 330,224 380,182 380,600 20,600" fill={accent} fill-opacity="0.08" stroke="none" />
+          <g transform="translate(118 108) scale(9)" fill={ink} stroke="none">
+            <path d="M2 6h1V5h1V4h1v1h1v1h6V5h1V4h1v1h1v1h1v3h-1v1h-1v1h-1v2h1v1h-2v-1h-1v-2H7v2h1v1H6v-1H5v-2H4v-1H3V9H1V8h1z" />
+            <rect x="13" y="7" width="1" height="1" fill={bg} />
+          </g>
+        </g>
+      )
+    }
+    {
+      motif === 'seats' && (
+        <g>
+          <path d="M70 90 Q200 60 330 90" stroke={accent} stroke-width="5" />
+          <text x="200" y="118" fill={ink} fill-opacity="0.5" stroke="none" style="font-family:var(--mono)" font-size="9" text-anchor="middle" letter-spacing="3">SCREEN THIS WAY</text>
+          {seats.map(({ r, c }, i) => (
+            <rect
+              x={88 + c * 26 + (c > 3 ? 10 : 0)}
+              y={146 + r * 26}
+              width="18"
+              height="16"
+              rx="4"
+              fill={picked.has(i) ? accent : i % 7 === 2 || i % 11 === 0 ? ink : 'none'}
+              fill-opacity={picked.has(i) ? 1 : 0.22}
+              stroke={picked.has(i) ? accent : ink}
+              stroke-opacity={picked.has(i) ? 1 : 0.4}
+              stroke-width="1.5"
+            />
+          ))}
+        </g>
+      )
+    }
+    {
+      motif === 'jet' && (
+        <g>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <path d={`M${40 + i * 16} ${420 - i * 6} C ${140 + i * 10} ${330 - i * 20}, ${200} ${220}, ${300 - i * 4} ${110 + i * 6}`} stroke={i === 2 ? accent : ink} stroke-opacity={i === 2 ? 1 : 0.18} stroke-width={i === 2 ? 6 : 2} />
+          ))}
+          <circle cx="300" cy="118" r="34" stroke={accent} stroke-width="3" />
+          <path d="M300 70 V100 M300 136 V166 M252 118 H282 M318 118 H348" stroke={accent} stroke-width="3" />
+          <circle cx="300" cy="118" r="5" fill={accent} stroke="none" />
+        </g>
+      )
+    }
+  </g>
+
+  <rect width="400" height="600" fill={`url(#fade-${id})`}></rect>
+
+  <text x="24" y="38" fill={ink} fill-opacity="0.75" style="font-family:var(--mono)" font-size="10" letter-spacing="2.5">{status}</text>
+  <circle cx="371" cy="34" r="5" fill={status === 'NOW SHOWING' ? '#ff4d3d' : accent}></circle>
+
+  <text x="200" y={taglineY} fill={ink} style="font-family:var(--serif)" font-style="italic" font-size="15" text-anchor="middle" fill-opacity="0.85">
+    {tagline.length > 54 ? `${tagline.slice(0, 52).replace(/\s\S*$/, '')}…` : tagline}
+  </text>
+  <text
+    x="200"
+    y={titleY}
+    fill={ink}
+    style="font-family:var(--display)"
+    font-weight="800"
+    font-size={nameSize}
+    text-anchor="middle"
+    letter-spacing="-3">{big}</text
+  >
+
+  <text x="200" y="540" fill={ink} fill-opacity="0.55" style="font-family:var(--display)" font-weight="600" font-size="9" text-anchor="middle" textLength="352" lengthAdjust="spacingAndGlyphs">
+    {billing}
+  </text>
+
+  <g transform="translate(24 558)">
+    <rect width="96" height="22" fill="none" stroke={ink} stroke-opacity="0.6"></rect>
+    <text x="8" y="15" fill={ink} style="font-family:var(--display)" font-weight="800" font-size="11">RATED</text>
+    <text x="52" y="15.5" fill={accent} style="font-family:var(--display)" font-weight="800" font-size="12">{platform.split(/[ ·/]/)[0].slice(0, 7).toUpperCase()}</text>
+  </g>
+  <text x="376" y="573" fill={ink} fill-opacity="0.5" style="font-family:var(--mono)" font-size="9" text-anchor="end" letter-spacing="1">{platform.toUpperCase()}</text>
+
+  <rect width="400" height="600" filter={`url(#n-${id})`} opacity="0.5"></rect>
+</svg>
+
+<style>
+  .poster {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.8), 0 0 0 1px var(--line);
+  }
+</style>

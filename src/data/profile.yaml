@@ -1,0 +1,60 @@
+# ─────────────────────────────────────────────────────────────
+#  The site's main settings. Change anything here and push.
+# ─────────────────────────────────────────────────────────────
+name: Nikhil Bhatt
+short: Nikhil
+roles: [AI Engineer, Full-Stack Engineer]
+location: Delhi NCR, India
+availability: Open to AI/ML and full-stack roles · immediate joiner
+email: nikhilbhatt6980@gmail.com
+
+# The line under the giant name on the home page. Keep it short.
+tagline: I build AI agents that do real work, and the software around them.
+
+# Shown in the "About" section. Markdown is fine.
+about: |
+  I'm an AI/ML engineer with a full-stack background. At **LyteHire AI** I was the first
+  engineer and built the product from an empty repo: resume parsing with RAG and pgvector,
+  an email agent on Google ADK that loops in a human when it should, and a real-time
+  voice interview agent with sub-1.2s turn-taking.
+
+  Outside work I build small, fast native tools for Windows (Rust and C++, no runtimes, a
+  few MB each), take apart software I like with reverse-engineering tools to learn how it
+  works, and watch a lot of movies. Probably too many.
+
+# Short "currently" status, shown on the home page. Update whenever.
+now:
+  - Building agentic workflows at LyteHire AI
+  - Pursuing an MCA at IGNOU
+  - Shipping Windows utilities in Rust on weekends
+
+# Little numbers on the home page.
+stats:
+  - { value: '1+', label: 'year shipping AI in production' }
+  - { value: '6', label: 'products released' }
+  - { value: '270+', label: 'LeetCode problems' }
+  - { value: '9.3', label: 'BCA GPA' }
+
+resume: /resume.pdf # replace public/resume.pdf to update the download
+
+links:
+  github: https://github.com/NikhilBhatt-15
+  linkedin: https://www.linkedin.com/in/nikhilbhatt-se
+  # leetcode: https://leetcode.com/u/your-handle   ← uncomment and fill in
+  # letterboxd: https://letterboxd.com/your-handle ← uncomment and fill in
+
+skills:
+  - group: AI & agents
+    items: [Google ADK, LangChain, LangGraph, Tool calling, Planning agents, Agent memory, Human-in-the-loop]
+  - group: LLMs & RAG
+    items: [Gemini, OpenAI, Claude, Prompt engineering, RAG pipelines, Embeddings, pgvector, Structured extraction]
+  - group: Full stack
+    items: [React 18, Next.js, TypeScript, Node.js, Express, Python, FastAPI, WebSockets]
+  - group: Data & infra
+    items: [PostgreSQL, Redis, MongoDB, Docker, GCP Cloud Run, GitHub Actions, Vercel]
+  - group: Native & tooling
+    items: [Rust, C++, Win32, Go, Reverse engineering]
+
+education:
+  - { school: IGNOU, degree: Master of Computer Applications (MCA), years: 2025 – 2027 }
+  - { school: Maharaja Surajmal Institute, degree: 'Bachelor of Computer Applications (BCA) · GPA 9.3', years: 2022 – 2025 }

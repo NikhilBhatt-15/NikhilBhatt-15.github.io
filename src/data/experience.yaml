@@ -1,0 +1,26 @@
+# Newest first. Each entry needs a unique id.
+- id: lytehire
+  role: Software Engineer (first engineer)
+  company: LyteHire AI
+  location: Delhi, India
+  start: Jul 2025
+  end: Present
+  points:
+    - Joined as the first engineer at a B2B SaaS startup and built the whole product from scratch, including its core AI agent workflows, in Python and the PERN stack.
+    - Built a document-automation pipeline (LLM APIs + pgvector) that parses resumes and scores candidates against job descriptions with structured extraction and vector retrieval.
+    - Designed an autonomous email agent on Google ADK with tool calling and a human-in-the-loop step that CCs the client's HR team whenever a query needs human judgment.
+    - Built a real-time voice interview agent over WebSockets with sub-1.2s turn-taking, written from scratch rather than on a managed platform. It produces structured evaluation reports, and final decisions go to a human reviewer.
+    - Built the full application end to end (React/Next.js, REST APIs, PostgreSQL schemas) and owned deployment and monitoring on GCP Cloud Run with Docker and GitHub Actions.
+    - Reviewed code from two interns inside a branch-and-PR workflow.
+  stack: [Python, Google ADK, LangGraph, pgvector, PostgreSQL, React, Next.js, Node.js, WebSockets, GCP, Docker]
+
+- id: ciphersquare
+  role: Backend Developer Intern
+  company: CipherSquare Technologies
+  location: Delhi, India
+  start: Jul 2024
+  end: Sep 2024
+  points:
+    - Developed transactional REST APIs (pay-in, pay-out, transaction flows) and containerized microservices with PHP Lumen and Docker.
+    - Built isolated containers for integration testing and resolved production edge cases from structured API logs.
+  stack: [PHP Lumen, Docker, MySQL, Postman]

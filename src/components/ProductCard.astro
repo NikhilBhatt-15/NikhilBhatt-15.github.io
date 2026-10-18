@@ -1,0 +1,101 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Poster from './Poster.astro';
+import { latestRelease, fmtSize } from '../lib/releases';
+import { url } from '../lib/data';
+
+interface Props {
+  product: CollectionEntry<'products'>;
+}
+const { product } = Astro.props;
+const p = product.data;
+const rel = p.kind === 'download' ? await latestRelease(p.repo, p.asset) : null;
+const status = p.kind === 'coming-soon' ? 'COMING SOON' : 'NOW SHOWING';
+---
+
+<article class="card reveal">
+  <a class="frame" href={url(`/products/${product.id}/`)} aria-label={`${p.name}: details and download`}>
+    <Poster {...p} version={rel?.tag} status={status} />
+  </a>
+  <div class="meta">
+    <div class="row">
+      <h3><a href={url(`/products/${product.id}/`)}>{p.name}</a></h3>
+      <span class="mono tag">{rel ? rel.tag : p.kind === 'self-host' ? 'docker' : 'soon'}</span>
+    </div>
+    <p>{p.tagline}</p>
+    <div class="row foot">
+      <span class="mono dim">{p.platform} · {p.language}</span>
+      {
+        rel?.asset ? (
+          <a class="dl" href={rel.asset.download}>
+            Download <span class="dim">{fmtSize(rel.asset.size)}</span> ↓
+          </a>
+        ) : (
+          <a class="dl" href={url(`/products/${product.id}/`)}>
+            {p.kind === 'self-host' ? 'Run it →' : 'Read more →'}
+          </a>
+        )
+      }
+    </div>
+  </div>
+</article>
+
+<style>
+  .card {
+    display: grid;
+    gap: 18px;
+    align-content: start;
+  }
+  .frame {
+    display: block;
+    transition: transform 0.6s var(--ease);
+    perspective: 900px;
+  }
+  .frame :global(.poster) {
+    transition: transform 0.6s var(--ease), box-shadow 0.6s var(--ease);
+  }
+  .frame:hover :global(.poster) {
+    transform: translateY(-6px) rotateX(3deg);
+    box-shadow: 0 40px 70px -30px rgb(0 0 0 / 0.9), 0 0 0 1px var(--line-2), 0 0 60px -20px rgb(255 181 71 / 0.35);
+  }
+  .row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  h3 {
+    margin: 0;
+    font-size: 24px;
+    letter-spacing: -0.03em;
+  }
+  h3 a {
+    text-decoration: none;
+  }
+  .tag {
+    font-size: 11px;
+    color: var(--accent);
+  }
+  p {
+    margin: 6px 0 14px;
+    color: var(--dim);
+    font-size: 15.5px;
+    line-height: 1.5;
+  }
+  .foot {
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+    align-items: center;
+  }
+  .foot .mono {
+    font-size: 11px;
+  }
+  .dl {
+    font: 600 13px var(--display);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .dl .dim {
+    font-weight: 400;
+  }
+</style>

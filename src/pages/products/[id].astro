@@ -1,0 +1,543 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Poster from '../../components/Poster.astro';
+import { getProducts } from '../../lib/content';
+import { latestRelease, fmtSize } from '../../lib/releases';
+import { url, fmtDate, inlineMd, blockMd } from '../../lib/data';
+
+export async function getStaticPaths() {
+  const all = await getProducts();
+  return all.map((product, i) => ({
+    params: { id: product.id },
+    props: { product, next: all[(i + 1) % all.length] },
+  }));
+}
+
+const { product, next } = Astro.props;
+const p = product.data;
+const { Content } = await render(product);
+const rel = p.kind === 'download' ? await latestRelease(p.repo, p.asset) : null;
+const gh = `https://github.com/${p.repo}`;
+const specs: [string, string][] = [
+  ['Platform', p.platform],
+  ['Written in', p.language],
+  ['Genre', p.genre],
+  ...(rel ? ([['Version', rel.tag], ['Released', fmtDate(rel.date)]] as [string, string][]) : []),
+  ...(rel?.asset ? ([['Size', fmtSize(rel.asset.size)]] as [string, string][]) : []),
+];
+const status = p.kind === 'coming-soon' ? 'COMING SOON' : 'NOW SHOWING';
+---
+
+<Base title={p.name} description={p.tagline}>
+  <article class="wrap product">
+    <a class="back mono" href={url('/products/')}>← All products</a>
+
+    <div class="top">
+      <div class="poster-col">
+        <div class="sticky">
+          <Poster {...p} version={rel?.tag} status={status} />
+        </div>
+      </div>
+
+      <div class="body">
+        <p class="label">{status === 'NOW SHOWING' ? 'Now showing' : 'Coming soon'} · {p.genre}</p>
+        <h1>{p.name}</h1>
+        <p class="tag serif">{p.tagline}</p>
+
+        <dl class="specs">
+          {
+            specs.map(([k, v]) => (
+              <div>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))
+          }
+        </dl>
+
+        {/* ── The ticket: download + checksum ── */}
+        {
+          rel?.asset ? (
+            <div class="ticket" id="download">
+              <div class="t-main">
+                <span class="mono t-admit">Admit one · {p.platform}</span>
+                <span class="t-file">{rel.asset.name}</span>
+                <span class="mono dim t-sub">
+                  {rel.tag} · {fmtSize(rel.asset.size)} · {fmtDate(rel.date)}
+                </span>
+                <a class="btn primary" href={rel.asset.download}>
+                  Download {rel.asset.name} ↓
+                </a>
+              </div>
+              <div class="t-stub">
+                <span class="mono t-admit">SHA-256</span>
+                <code class="hash">{rel.asset.sha256 ?? 'see release notes'}</code>
+                {rel.asset.sha256 && (
+                  <button class="copy mono" data-copy={rel.asset.sha256}>
+                    Copy hash
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : p.kind === 'self-host' ? (
+            <div class="ticket">
+              <div class="t-main">
+                <span class="mono t-admit">Self-hosted · runs on Docker</span>
+                <span class="t-file">docker compose up</span>
+                <span class="mono dim t-sub">Clone the repo and start it. Steps below.</span>
+                <a class="btn primary" href={gh}>
+                  Get the source →
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div class="ticket soon">
+              <div class="t-main">
+                <span class="mono t-admit">In post-production</span>
+                <span class="t-file">Release coming soon</span>
+                <span class="mono dim t-sub">Builds for Android and Windows are on the way.</span>
+              </div>
+            </div>
+          )
+        }
+        <div class="links">
+          {p.kind !== 'coming-soon' && <a href={gh}>Source on GitHub ↗</a>}
+          {rel && <a href={`${gh}/releases`}>All releases ↗</a>}
+          {rel && <a href={rel.url}>What's new in {rel.tag} ↗</a>}
+        </div>
+
+        {
+          p.screenshots.length > 0 && (
+            <div class="shots">
+              {p.screenshots.map((s) => (
+                <figure>
+                  <img src={url(s.src)} alt={s.alt} loading="lazy" />
+                </figure>
+              ))}
+            </div>
+          )
+        }
+
+        <section class="steps">
+          <h2>The <em>synopsis</em></h2>
+          <div class="prose">
+            <Content />
+          </div>
+          <ul class="chips stack">
+            {p.stack.map((s) => <li>{s}</li>)}
+          </ul>
+        </section>
+
+        {
+          p.install.length > 0 && (
+            <section class="steps">
+              <h2>
+                How to <em>install</em>
+              </h2>
+              <ol>
+                {p.install.map((s) => (
+                  <li set:html={blockMd(s)} />
+                ))}
+              </ol>
+              {rel?.asset?.sha256 && (
+                <details class="verify">
+                  <summary>Verify the download (optional)</summary>
+                  <p>In PowerShell, in the folder you saved it to:</p>
+                  <pre>
+                    <code>(Get-FileHash .\{rel.asset.name}).Hash -eq '{rel.asset.sha256}'</code>
+                  </pre>
+                  <p>
+                    It prints <code>True</code> if the file is exactly what was published.
+                  </p>
+                </details>
+              )}
+            </section>
+          )
+        }
+
+        {
+          p.usage.length > 0 && (
+            <section class="steps">
+              <h2>
+                How to <em>use it</em>
+              </h2>
+              <ul class="use">
+                {p.usage.map((s) => (
+                  <li set:html={inlineMd(s)} />
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        {
+          p.keys.length > 0 && (
+            <section class="steps">
+              <h2>Controls</h2>
+              <table class="keys">
+                <tbody>
+                  {p.keys.map(([k, a]) => (
+                    <tr>
+                      <td>
+                        {k.split(/\s*\+\s*/).map((part, i) => (
+                          <>
+                            {i > 0 && <span class="plus">+</span>}
+                            <kbd>{part}</kbd>
+                          </>
+                        ))}
+                      </td>
+                      <td>{a}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )
+        }
+
+      </div>
+    </div>
+
+    <a class="next" href={url(`/products/${next.id}/`)}>
+      <span class="label">Next feature</span>
+      <span class="next-name">{next.data.name} →</span>
+    </a>
+  </article>
+</Base>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(b.dataset.copy!);
+        b.textContent = 'Copied ✓';
+        setTimeout(() => (b.textContent = 'Copy hash'), 1600);
+      } catch {}
+    }),
+  );
+</script>
+
+<style>
+  .product {
+    padding-top: 110px;
+  }
+  .back {
+    font-size: 12px;
+    color: var(--dim);
+    text-decoration: none;
+  }
+  .top {
+    display: grid;
+    grid-template-columns: minmax(240px, 380px) 1fr;
+    gap: clamp(28px, 6vw, 88px);
+    margin-top: 28px;
+  }
+  .sticky {
+    position: sticky;
+    top: 96px;
+  }
+  @media (max-width: 860px) {
+    .top {
+      grid-template-columns: 1fr;
+    }
+    .poster-col {
+      max-width: 340px;
+    }
+    .sticky {
+      position: static;
+    }
+  }
+  h1 {
+    margin: 10px 0 0;
+    font-weight: 800;
+    font-size: clamp(56px, 9vw, 128px);
+    line-height: 0.88;
+    letter-spacing: -0.055em;
+  }
+  .tag {
+    font-size: clamp(22px, 2.6vw, 32px);
+    line-height: 1.2;
+    margin: 18px 0 32px;
+    color: var(--accent);
+    max-width: 30ch;
+  }
+  .specs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    border-block: 1px solid var(--line);
+    margin: 0 0 32px;
+  }
+  .specs div {
+    padding: 14px 0;
+  }
+  .specs dt {
+    font: 500 10px var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .specs dd {
+    margin: 4px 0 0;
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  /* Ticket */
+  .ticket {
+    display: grid;
+    grid-template-columns: 1fr 230px;
+    background: var(--ink);
+    color: var(--bg);
+    border-radius: 14px;
+    overflow: hidden;
+    --notch: radial-gradient(circle at 0 50%, transparent 11px, #000 11.5px);
+    position: relative;
+  }
+  .ticket.soon {
+    grid-template-columns: 1fr;
+    background: var(--bg-3);
+    color: var(--ink);
+  }
+  .t-main,
+  .t-stub {
+    padding: 24px 26px;
+    display: grid;
+    gap: 6px;
+    align-content: start;
+  }
+  .t-stub {
+    border-left: 2px dashed rgb(11 10 9 / 0.3);
+    background: #e6dfd3;
+    position: relative;
+  }
+  .t-stub::before,
+  .t-stub::after {
+    content: '';
+    position: absolute;
+    left: -12px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--bg);
+  }
+  .t-stub::before {
+    top: -11px;
+  }
+  .t-stub::after {
+    bottom: -11px;
+  }
+  .t-admit {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    opacity: 0.7;
+  }
+  .t-file {
+    font-weight: 800;
+    font-size: clamp(24px, 3vw, 34px);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    word-break: break-all;
+  }
+  .ticket:not(.soon) .t-sub {
+    color: rgb(11 10 9 / 0.6);
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+  .t-sub {
+    font-size: 11px;
+  }
+  .ticket .btn.primary {
+    justify-self: start;
+    background: var(--bg);
+    color: var(--ink);
+    border-color: var(--bg);
+  }
+  .ticket .btn.primary:hover {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+  }
+  .hash {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-all;
+    color: rgb(11 10 9 / 0.8);
+  }
+  .copy {
+    justify-self: start;
+    margin-top: 6px;
+    background: none;
+    border: 1px solid rgb(11 10 9 / 0.3);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 10px;
+    color: var(--bg);
+    cursor: pointer;
+  }
+  .copy:hover {
+    background: var(--bg);
+    color: var(--ink);
+  }
+  @media (max-width: 620px) {
+    .ticket {
+      grid-template-columns: 1fr;
+    }
+    .t-stub {
+      border-left: 0;
+      border-top: 2px dashed rgb(11 10 9 / 0.3);
+    }
+    .t-stub::before,
+    .t-stub::after {
+      display: none;
+    }
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    margin-top: 16px;
+    font-size: 14px;
+  }
+  .links a {
+    color: var(--dim);
+  }
+
+  .shots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    gap: 14px;
+    margin-top: 48px;
+  }
+  .shots figure {
+    margin: 0;
+    background: var(--bg-2);
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+  .shots img {
+    border-radius: 6px;
+    margin: auto;
+  }
+
+  .steps {
+    margin-top: 64px;
+  }
+  .steps h2 {
+    font-size: clamp(30px, 3.8vw, 48px);
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin: 0 0 24px;
+  }
+  .steps h2 em {
+    font-family: var(--serif);
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .steps ol {
+    list-style: none;
+    counter-reset: s;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .steps ol > li {
+    counter-increment: s;
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 8px;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+    color: #ddd6cb;
+  }
+  .steps ol > li::before {
+    content: counter(s, decimal-leading-zero);
+    font: 500 13px var(--mono);
+    color: var(--accent);
+    padding-top: 4px;
+  }
+  .steps ol > li :global(p) {
+    margin: 0;
+    grid-column: 2;
+  }
+  .steps ol > li :global(pre) {
+    grid-column: 2;
+    margin: 10px 0 0;
+  }
+  .use {
+    padding-left: 1.1em;
+    color: #ddd6cb;
+    display: grid;
+    gap: 10px;
+  }
+  .use li::marker {
+    color: var(--accent);
+  }
+  .verify {
+    margin-top: 18px;
+    color: var(--dim);
+    font-size: 15px;
+  }
+  .verify summary {
+    cursor: pointer;
+    font: 500 12px var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .verify pre {
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .keys {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .keys td {
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+    vertical-align: middle;
+  }
+  .keys td:first-child {
+    width: 46%;
+    padding-right: 16px;
+  }
+  .keys td:last-child {
+    color: var(--dim);
+  }
+  kbd {
+    font: 500 12px var(--mono);
+    background: var(--bg-3);
+    border: 1px solid var(--line-2);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    padding: 3px 8px;
+    white-space: nowrap;
+  }
+  .plus {
+    color: var(--faint);
+    margin: 0 4px;
+    font-size: 12px;
+  }
+  .stack {
+    margin-top: 28px;
+  }
+
+  .next {
+    display: grid;
+    margin-top: clamp(80px, 12vw, 140px);
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+    text-decoration: none;
+  }
+  .next-name {
+    font-weight: 800;
+    font-size: clamp(44px, 8vw, 110px);
+    letter-spacing: -0.05em;
+    line-height: 1;
+  }
+</style>

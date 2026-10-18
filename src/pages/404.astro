@@ -1,0 +1,37 @@
+---
+import Base from '../layouts/Base.astro';
+import { url } from '../lib/data';
+---
+
+<Base title="Scene missing">
+  <section class="wrap lost">
+    <p class="label">Error 404 · reel not found</p>
+    <h1>This scene<br /><em>was cut.</em></h1>
+    <p class="dim">It didn't make the final edit. Let's get you back to the feature.</p>
+    <a class="btn primary" href={url('/')}>Back to the opening titles</a>
+  </section>
+</Base>
+
+<style>
+  .lost {
+    min-height: 80vh;
+    display: grid;
+    align-content: center;
+    gap: 18px;
+    padding-top: 120px;
+  }
+  h1 {
+    font-size: clamp(56px, 12vw, 180px);
+    line-height: 0.86;
+    letter-spacing: -0.055em;
+    margin: 0;
+  }
+  h1 em {
+    font-family: var(--serif);
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .btn {
+    justify-self: start;
+  }
+</style>

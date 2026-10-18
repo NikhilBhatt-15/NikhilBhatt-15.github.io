@@ -1,0 +1,437 @@
+---
+import Base from '../../layouts/Base.astro';
+import MoviePoster from '../../components/MoviePoster.astro';
+import Stars from '../../components/Stars.astro';
+import { url, fmtDate, profile } from '../../lib/data';
+import { getMovies, getPick } from '../../lib/content';
+
+const movies = await getMovies();
+const pick = await getPick();
+const favs = movies.filter((m) => m.data.favorite).slice(0, 4);
+const thisYear = new Date().getUTCFullYear();
+const yearCount = movies.filter((m) => m.data.watched.getUTCFullYear() === thisYear).length;
+const hours = Math.round(movies.reduce((s, m) => s + (m.data.runtime ?? 0), 0) / 60);
+const rated = movies.filter((m) => m.data.rating);
+const avg = rated.length ? (rated.reduce((s, m) => s + m.data.rating!, 0) / rated.length).toFixed(1) : '–';
+const buckets = Array.from({ length: 10 }, (_, i) => rated.filter((m) => m.data.rating === (i + 1) / 2).length);
+const maxB = Math.max(1, ...buckets);
+
+// Diary grouped by month, newest first.
+const months = new Map<string, typeof movies>();
+for (const m of movies) {
+  const key = fmtDate(m.data.watched, { month: 'long', year: 'numeric' });
+  if (!months.has(key)) months.set(key, []);
+  months.get(key)!.push(m);
+}
+---
+
+<Base title="Movies" description={`${profile.name}'s movie diary: reviews, ratings, favourites and the film of the month.`}>
+  <section class="wrap">
+    <header class="page-head">
+      <span class="label">Reel 04 · the after-hours programme</span>
+      <h1>The <em>watchlist</em></h1>
+      <p>
+        I watch a lot of movies. This is the diary: what I watched, what I thought, and the one you should see this
+        month.
+      </p>
+    </header>
+
+    {
+      movies.length > 0 && (
+        <div class="tally">
+          <div>
+            <strong>{movies.length}</strong>
+            <span>films logged</span>
+          </div>
+          <div>
+            <strong>{yearCount}</strong>
+            <span>this year</span>
+          </div>
+          {hours > 0 && (
+            <div>
+              <strong>{hours}h</strong>
+              <span>in the dark</span>
+            </div>
+          )}
+          <div>
+            <strong>{avg}</strong>
+            <span>average rating</span>
+          </div>
+          <div class="hist" aria-label="Ratings distribution">
+            <div class="bars">
+              {buckets.map((b, i) => (
+                <span style={`--h:${(b / maxB) * 100}%`} title={`${(i + 1) / 2}★: ${b}`} />
+              ))}
+            </div>
+            <div class="hist-axis mono">
+              <span>½</span>
+              <span>★★★★★</span>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    {
+      pick && (
+        <a class="feature" href={url(`/movies/${pick.id}/`)}>
+          {(pick.data.backdrop ?? pick.data.poster) && <img class:list={['bg', { blur: !pick.data.backdrop }]} src={pick.data.backdrop ?? pick.data.poster} alt="" referrerpolicy="no-referrer" />}
+          <div class="f-poster">
+            <MoviePoster {...pick.data} eager />
+          </div>
+          <div class="f-copy">
+            <span class="label">★ Film of the {pick.data.pick}</span>
+            <h2>{pick.data.title}</h2>
+            <p class="serif f-dir">
+              {pick.data.year}
+              {pick.data.director && ` · dir. ${pick.data.director}`}
+            </p>
+            <Stars rating={pick.data.rating} liked={pick.data.liked} size={20} />
+            {pick.data.oneLiner && <p class="f-one">“{pick.data.oneLiner}”</p>}
+            <span class="mono f-read">Read the review →</span>
+          </div>
+        </a>
+      )
+    }
+
+    {
+      favs.length > 0 && (
+        <section class="block">
+          <h2 class="sub">
+            Favourite <em>four</em>
+          </h2>
+          <div class="favs">
+            {favs.map((m) => (
+              <a href={url(`/movies/${m.id}/`)} class="fav">
+                <MoviePoster {...m.data} />
+              </a>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <section class="block">
+      <div class="diary-head">
+        <h2 class="sub">The <em>diary</em></h2>
+        {
+          movies.length > 0 && (
+            <div class="filters" role="group" aria-label="Filter diary">
+              <button class="mono on" data-f="all">All</button>
+              <button class="mono" data-f="review">Reviewed</button>
+              <button class="mono" data-f="liked">Liked ♥</button>
+              <button class="mono" data-f="top">4★+</button>
+            </div>
+          )
+        }
+      </div>
+      {
+        movies.length === 0 ? (
+          <div class="empty">
+            <p class="serif">The projector's warming up.</p>
+            <p class="dim">
+              No entries yet. Add one with <code>npm run new movie "Title"</code> or from the CMS.
+            </p>
+          </div>
+        ) : (
+          [...months].map(([month, list]) => (
+            <div class="month">
+              <h3 class="mono">{month}</h3>
+              <ol>
+                {list.map((m) => (
+                  <li
+                    data-review={m.body?.trim() ? '1' : '0'}
+                    data-liked={m.data.liked ? '1' : '0'}
+                    data-top={(m.data.rating ?? 0) >= 4 ? '1' : '0'}
+                  >
+                    <a href={url(`/movies/${m.id}/`)}>
+                      <span class="day">{m.data.watched.getUTCDate()}</span>
+                      <span class="thumb">
+                        <MoviePoster {...m.data} />
+                      </span>
+                      <span class="t">
+                        <span class="name">{m.data.title}</span> <span class="dim yr">{m.data.year}</span>
+                        {m.data.oneLiner && <span class="ol serif">“{m.data.oneLiner}”</span>}
+                      </span>
+                      <span class="r">
+                        <Stars rating={m.data.rating} liked={m.data.liked} rewatch={m.data.rewatch} />
+                        {m.body?.trim() && <span class="mono rev">review</span>}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))
+        )
+      }
+    </section>
+  </section>
+</Base>
+
+<script>
+  const btns = document.querySelectorAll<HTMLButtonElement>('.filters button');
+  btns.forEach((b) =>
+    b.addEventListener('click', () => {
+      btns.forEach((x) => x.classList.toggle('on', x === b));
+      const f = b.dataset.f!;
+      document.querySelectorAll<HTMLElement>('.month').forEach((month) => {
+        let shown = 0;
+        month.querySelectorAll<HTMLElement>('li').forEach((li) => {
+          const ok = f === 'all' || li.dataset[f] === '1';
+          li.hidden = !ok;
+          if (ok) shown++;
+        });
+        month.hidden = shown === 0;
+      });
+    }),
+  );
+</script>
+
+<style>
+  .bg.blur {
+    filter: blur(48px) saturate(1.3);
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  .tally {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin-top: 56px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .tally > div {
+    flex: 1 1 140px;
+    padding: 22px;
+    display: grid;
+    gap: 4px;
+    border-right: 1px solid var(--line);
+  }
+  .tally > div:last-child {
+    border-right: 0;
+  }
+  .tally strong {
+    font-size: 40px;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .tally span {
+    color: var(--dim);
+    font-size: 13px;
+  }
+  .hist {
+    flex: 2 1 220px !important;
+  }
+  .bars {
+    display: flex;
+    align-items: end;
+    gap: 3px;
+    height: 44px;
+  }
+  .bars span {
+    flex: 1;
+    height: max(2px, var(--h));
+    background: var(--accent);
+    opacity: 0.85;
+    border-radius: 2px 2px 0 0;
+  }
+  .hist-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--accent);
+  }
+
+  .feature {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(150px, 260px) 1fr;
+    gap: clamp(24px, 5vw, 64px);
+    align-items: center;
+    margin-top: 40px;
+    padding: clamp(22px, 5vw, 60px);
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--bg-2);
+    box-shadow: 0 0 0 1px var(--line);
+    text-decoration: none;
+  }
+  .bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.35;
+    mask-image: linear-gradient(to left, #000 25%, transparent 95%);
+  }
+  .f-poster,
+  .f-copy {
+    position: relative;
+  }
+  .f-copy h2 {
+    margin: 12px 0 4px;
+    font-size: clamp(40px, 7vw, 96px);
+    line-height: 0.9;
+    letter-spacing: -0.05em;
+  }
+  .f-dir {
+    font-size: 22px;
+    color: var(--dim);
+    margin: 0 0 16px;
+  }
+  .f-one {
+    font-family: var(--serif);
+    font-size: clamp(20px, 2.4vw, 30px);
+    line-height: 1.3;
+    max-width: 38ch;
+  }
+  .f-read {
+    display: block;
+    margin-top: 22px;
+    font-size: 11px;
+    color: var(--accent);
+  }
+  @media (max-width: 620px) {
+    .feature {
+      grid-template-columns: 1fr;
+    }
+    .f-poster {
+      max-width: 180px;
+    }
+  }
+
+  .block {
+    margin-top: 100px;
+  }
+  .sub {
+    font-size: clamp(32px, 4.4vw, 56px);
+    letter-spacing: -0.045em;
+    margin: 0 0 28px;
+  }
+  .sub em {
+    font-family: var(--serif);
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .favs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(10px, 2vw, 24px);
+  }
+  .fav :global(.mp) {
+    transition: transform 0.5s var(--ease);
+  }
+  .fav:hover :global(.mp) {
+    transform: translateY(-6px) rotate(-1deg);
+  }
+
+  .diary-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: 16px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 12px;
+  }
+  .filters {
+    display: flex;
+    gap: 6px;
+    padding-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .filters button {
+    background: none;
+    border: 1px solid var(--line-2);
+    color: var(--dim);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .filters button.on {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+  .month h3 {
+    font-size: 12px;
+    color: var(--accent);
+    margin: 36px 0 8px;
+    font-weight: 500;
+  }
+  .month ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .month a {
+    display: grid;
+    grid-template-columns: 40px 46px 1fr auto;
+    gap: 18px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+  }
+  .day {
+    font-size: 26px;
+    font-weight: 300;
+    color: var(--faint);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .t {
+    display: grid;
+  }
+  .name {
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .yr {
+    font-size: 14px;
+  }
+  .ol {
+    color: var(--dim);
+    font-size: 16px;
+  }
+  .r {
+    display: grid;
+    justify-items: end;
+    gap: 4px;
+  }
+  .rev {
+    font-size: 10px;
+    color: var(--dim);
+  }
+  .month a:hover .name {
+    color: var(--accent);
+  }
+  @media (max-width: 560px) {
+    .month a {
+      grid-template-columns: 26px 40px 1fr;
+    }
+    .r {
+      grid-column: 3;
+      justify-items: start;
+    }
+    .day {
+      font-size: 18px;
+    }
+  }
+  .empty {
+    border: 1px dashed var(--line-2);
+    border-radius: 16px;
+    padding: 48px 28px;
+    text-align: center;
+    margin-top: 28px;
+  }
+  .empty .serif {
+    font-size: 32px;
+    margin: 0 0 6px;
+  }
+</style>

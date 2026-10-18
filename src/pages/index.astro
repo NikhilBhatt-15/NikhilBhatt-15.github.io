@@ -1,0 +1,728 @@
+---
+import Base from '../layouts/Base.astro';
+import ProductCard from '../components/ProductCard.astro';
+import MoviePoster from '../components/MoviePoster.astro';
+import Stars from '../components/Stars.astro';
+import { profile, url, fmtDate, inlineMd } from '../lib/data';
+import { getProducts, getProjects, getNotes, getMovies, getExperience, getPick } from '../lib/content';
+
+const products = await getProducts();
+const experience = await getExperience();
+const projects = (await getProjects()).filter((p) => p.data.featured).slice(0, 3);
+const notes = (await getNotes()).slice(0, 4);
+const movies = await getMovies();
+const pick = await getPick();
+const recent = movies.filter((m) => m.id !== pick?.id).slice(0, 6);
+const year = new Date().getFullYear();
+const marquee = products.map((p) => p.data.name.toUpperCase());
+---
+
+<Base leader>
+  <!-- ── Opening titles ─────────────────────────────────── -->
+  <section class="hero" data-reel="00">
+    <div class="bar top" aria-hidden="true"></div>
+    <div class="wrap hero-in">
+      <p class="credit mono">
+        <span>A {profile.short} Bhatt production</span>
+        <span class="dim">·</span>
+        <span>{profile.location}</span>
+        <span class="dim">·</span>
+        <span>Season {year}</span>
+      </p>
+      <h1 class="title">
+        <span class="fit-box"><span class="fit" data-fit>{profile.name.toUpperCase()}</span></span>
+      </h1>
+      <div class="sub">
+        <p class="roles serif">
+          <span>{profile.roles[0]}</span>
+          <span><span class="amp">&amp;</span> {profile.roles[1]}</span>
+        </p>
+        <p class="tagline">{profile.tagline}</p>
+      </div>
+      <div class="hero-actions">
+        <a class="btn primary" href="#now-showing">Now showing ↓</a>
+        <a class="btn" href={url('/about/')}>Full credits</a>
+        <a class="btn" href={url(profile.resume)} download>Résumé</a>
+      </div>
+      <ul class="now">
+        <li class="mono label">Currently filming</li>
+        {profile.now.map((n) => <li>{n}</li>)}
+      </ul>
+    </div>
+    <div class="bar bottom" aria-hidden="true"></div>
+  </section>
+
+  <!-- ── Marquee ─────────────────────────────────────────── -->
+  <div class="marquee" aria-hidden="true">
+    <div class="track">
+      {
+        [0, 1].map(() => (
+          <span>
+            {marquee.map((m) => (
+              <>
+                <b>{m}</b>
+                <i>★</i>
+              </>
+            ))}
+            <b class="serif">now showing</b>
+            <i>★</i>
+          </span>
+        ))
+      }
+    </div>
+  </div>
+
+  <!-- ── Reel 01: Products ──────────────────────────────── -->
+  <section class="reel wrap" id="now-showing" data-reel="01">
+    <header class="reel-head">
+      <span class="num">R.01</span>
+      <h2>Now <em>showing</em></h2>
+      <a class="more" href={url('/products/')}>All products →</a>
+    </header>
+    <p class="lede">
+      Small, fast Windows tools I use every day (native, no runtimes, a few MB each), plus a couple of bigger
+      builds. Download, run, done.
+    </p>
+    <div class="grid products">
+      {products.map((p) => <ProductCard product={p} />)}
+    </div>
+  </section>
+
+  <!-- ── Reel 02: Filmography (experience) ──────────────── -->
+  <section class="reel wrap" id="filmography" data-reel="02">
+    <header class="reel-head">
+      <span class="num">R.02</span>
+      <h2>Filmo<em>graphy</em></h2>
+      <a class="more" href={url('/about/')}>Full credits →</a>
+    </header>
+    <div class="stats reveal">
+      {
+        profile.stats.map((s) => (
+          <div>
+            <strong>{s.value}</strong>
+            <span>{s.label}</span>
+          </div>
+        ))
+      }
+    </div>
+    <ol class="jobs">
+      {
+        experience.map((e) => (
+          <li class="job reveal">
+            <span class="when mono">
+              {e.data.start} — {e.data.end}
+            </span>
+            <div>
+              <h3>
+                {e.data.role} <span class="at serif">at</span> {e.data.company}
+              </h3>
+              <ul class="points">
+                {e.data.points.slice(0, 4).map((pt) => (
+                  <li set:html={inlineMd(pt)} />
+                ))}
+              </ul>
+              <ul class="chips">
+                {e.data.stack.map((s) => (
+                  <li>{s}</li>
+                ))}
+              </ul>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <!-- ── Reel 03: Early works ───────────────────────────── -->
+  <section class="reel wrap" id="early-works" data-reel="03">
+    <header class="reel-head">
+      <span class="num">R.03</span>
+      <h2>Early <em>works</em></h2>
+      <a class="more" href={url('/projects/')}>The archive →</a>
+    </header>
+    <p class="lede">Projects from my learning years. Rough around the edges, and every one taught me something.</p>
+    <div class="grid stills">
+      {
+        projects.map((p) => (
+          <a class="still reveal" href={p.data.live ?? p.data.repo} target="_blank" rel="noopener">
+            <div class="still-img">
+              {p.data.image ? (
+                <img src={url(p.data.image)} alt="" loading="lazy" />
+              ) : (
+                <div class="still-blank serif">{p.data.title}</div>
+              )}
+              <span class="still-year mono">{p.data.year}</span>
+            </div>
+            <h3>{p.data.title}</h3>
+            <p>{p.data.summary}</p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ── Reel 04: Movies ────────────────────────────────── -->
+  <section class="reel wrap" id="watchlist" data-reel="04">
+    <header class="reel-head">
+      <span class="num">R.04</span>
+      <h2>The <em>watchlist</em></h2>
+      <a class="more" href={url('/movies/')}>Movie diary →</a>
+    </header>
+    {
+      pick ? (
+        <a class="pick reveal" href={url(`/movies/${pick.id}/`)}>
+          {(pick.data.backdrop ?? pick.data.poster) && <img class:list={['pick-bg', { blur: !pick.data.backdrop }]} src={pick.data.backdrop ?? pick.data.poster} alt="" loading="lazy" referrerpolicy="no-referrer" />}
+          <div class="pick-poster">
+            <MoviePoster {...pick.data} />
+          </div>
+          <div class="pick-copy">
+            <span class="label">Film of the {pick.data.pick}</span>
+            <h3>
+              {pick.data.title} <span class="dim">{pick.data.year}</span>
+            </h3>
+            {pick.data.director && <p class="serif dir">dir. {pick.data.director}</p>}
+            <Stars rating={pick.data.rating} liked={pick.data.liked} size={18} />
+            {pick.data.oneLiner && <p class="one">“{pick.data.oneLiner}”</p>}
+            <span class="mono read">Read the review →</span>
+          </div>
+        </a>
+      ) : null
+    }
+    {
+      recent.length > 0 ? (
+        <div class="diary">
+          {recent.map((m) => (
+            <a class="d reveal" href={url(`/movies/${m.id}/`)}>
+              <MoviePoster {...m.data} />
+              <span class="d-meta">
+                <Stars rating={m.data.rating} liked={m.data.liked} size={12} />
+                <span class="mono dim">{fmtDate(m.data.watched, { day: 'numeric', month: 'short' })}</span>
+              </span>
+            </a>
+          ))}
+        </div>
+      ) : (
+        !pick && (
+          <div class="empty reveal">
+            <p class="serif">The projector's warming up.</p>
+            <p class="dim">Reviews, favourites and a film of the month are coming soon.</p>
+          </div>
+        )
+      )
+    }
+  </section>
+
+  <!-- ── Reel 05: Notes ─────────────────────────────────── -->
+  {
+    notes.length > 0 && (
+      <section class="reel wrap" id="notes" data-reel="05">
+        <header class="reel-head">
+          <span class="num">R.05</span>
+          <h2>
+            Director's <em>notes</em>
+          </h2>
+          <a class="more" href={url('/notes/')}>All notes →</a>
+        </header>
+        <ul class="notes">
+          {notes.map((n) => (
+            <li class="reveal">
+              <a href={url(`/notes/${n.id}/`)}>
+                <span class="n-title">{n.data.title}</span>
+                <span class="n-sum dim">{n.data.summary}</span>
+                <span class="mono dim n-date">{fmtDate(n.data.date, { month: 'short', year: 'numeric' })}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+</Base>
+
+<style>
+  .pick-bg.blur {
+    filter: blur(48px) saturate(1.3);
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  /* ── Hero ───────────────────────────────────────────── */
+  .hero {
+    position: relative;
+    min-height: min(100svh, 1000px);
+    display: flex;
+    align-items: center;
+    padding: 110px 0 90px;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 70% 30%, rgb(255 181 71 / 0.12), transparent 70%),
+      radial-gradient(ellipse 50% 40% at 15% 80%, rgb(255 77 61 / 0.07), transparent 70%);
+  }
+  .bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 50vh;
+    background: #000;
+    z-index: 3;
+    transition: height 1.6s var(--ease) 0.1s;
+  }
+  .bar.top {
+    top: 0;
+  }
+  .bar.bottom {
+    bottom: 0;
+  }
+  :global(html.rolled) .bar {
+    height: clamp(28px, 6vh, 64px);
+  }
+  :global(html:not(.js)) .bar {
+    height: clamp(28px, 6vh, 64px);
+  }
+  .hero-in {
+    position: relative;
+    z-index: 2;
+  }
+  .credit {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--dim);
+    margin: 0 0 18px;
+  }
+  .title {
+    margin: 0;
+    font-weight: 900;
+    line-height: 0.8;
+    letter-spacing: -0.06em;
+  }
+  .fit-box {
+    display: block;
+    width: 100%;
+  }
+  .fit {
+    display: inline-block;
+    white-space: nowrap;
+    letter-spacing: -0.055em;
+    transition: none;
+    font-size: 14.2vw;
+    background: linear-gradient(180deg, var(--ink) 30%, #c9bfb0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    padding-bottom: 0.04em;
+  }
+  .sub {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 24px 48px;
+    margin-top: 28px;
+    align-items: end;
+  }
+  .roles {
+    margin: 0;
+    display: grid;
+    font-size: clamp(30px, 4vw, 56px);
+    line-height: 1.02;
+    color: var(--accent);
+  }
+  .roles > span {
+    white-space: nowrap;
+  }
+  .amp {
+    color: var(--ink);
+  }
+  .tagline {
+    margin: 0;
+    font-size: clamp(18px, 1.6vw, 22px);
+    color: var(--dim);
+    max-width: 34ch;
+    justify-self: end;
+  }
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 40px;
+  }
+  .now {
+    list-style: none;
+    padding: 0;
+    margin: 44px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    font-size: 14px;
+    color: var(--dim);
+  }
+  .now li:not(.label)::before {
+    content: '▸ ';
+    color: var(--accent);
+  }
+  .now .label {
+    width: 100%;
+    font-size: 11px;
+  }
+  @media (max-width: 760px) {
+    .sub {
+      grid-template-columns: 1fr;
+    }
+    .tagline {
+      justify-self: start;
+    }
+  }
+  /* Opening animation: content fades up after the bars part. */
+  :global(html.js) .hero-in > * {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  :global(html.rolled) .hero-in > * {
+    opacity: 1;
+    transform: none;
+    transition: opacity 1s var(--ease), transform 1s var(--ease);
+  }
+  :global(html.rolled) .hero-in > :nth-child(2) { transition-delay: 0.35s; }
+  :global(html.rolled) .hero-in > :nth-child(3) { transition-delay: 0.55s; }
+  :global(html.rolled) .hero-in > :nth-child(4) { transition-delay: 0.7s; }
+  :global(html.rolled) .hero-in > :nth-child(5) { transition-delay: 0.85s; }
+
+  /* ── Marquee ────────────────────────────────────────── */
+  .marquee {
+    position: relative;
+    z-index: 1;
+    border-block: 1px solid var(--line);
+    overflow: hidden;
+    padding: 18px 0;
+    background: var(--bg-2);
+  }
+  .track {
+    display: flex;
+    width: max-content;
+    animation: marquee 40s linear infinite;
+  }
+  .track span {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding-right: 28px;
+  }
+  .track b {
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+  }
+  .track b.serif {
+    font-weight: 400;
+    color: var(--accent);
+    font-size: 28px;
+  }
+  .track i {
+    color: var(--accent);
+    font-style: normal;
+    font-size: 14px;
+  }
+  @keyframes marquee {
+    to { transform: translateX(-50%); }
+  }
+
+  .lede {
+    max-width: 60ch;
+    color: var(--dim);
+    font-size: 18px;
+    margin: -16px 0 44px;
+  }
+
+  .grid {
+    display: grid;
+    gap: clamp(28px, 4vw, 48px) clamp(20px, 3vw, 36px);
+  }
+  .products {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  }
+
+  /* ── Filmography ───────────────────────────────────── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin-bottom: 56px;
+    overflow: hidden;
+  }
+  .stats div {
+    padding: 26px 22px;
+    display: grid;
+    gap: 6px;
+  }
+  .stats div + div {
+    border-left: 1px solid var(--line);
+  }
+  .stats strong {
+    font-size: clamp(36px, 5vw, 60px);
+    line-height: 1;
+    letter-spacing: -0.05em;
+    font-weight: 800;
+  }
+  .stats span {
+    color: var(--dim);
+    font-size: 13px;
+  }
+  @media (max-width: 700px) {
+    .stats {
+      grid-template-columns: 1fr 1fr;
+    }
+    .stats div:nth-child(3) {
+      border-left: 0;
+    }
+    .stats div:nth-child(n + 3) {
+      border-top: 1px solid var(--line);
+    }
+  }
+  .jobs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 56px;
+  }
+  .job {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 24px;
+  }
+  .when {
+    font-size: 12px;
+    color: var(--faint);
+    padding-top: 8px;
+  }
+  .job h3 {
+    margin: 0 0 14px;
+    font-size: clamp(22px, 2.6vw, 32px);
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+  .at {
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .points {
+    margin: 0 0 18px;
+    padding-left: 1.1em;
+    color: var(--dim);
+    max-width: 75ch;
+  }
+  .points li {
+    margin: 6px 0;
+  }
+  .points li::marker {
+    color: var(--accent);
+  }
+  @media (max-width: 700px) {
+    .job {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+  }
+
+  /* ── Early works ───────────────────────────────────── */
+  .stills {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  }
+  .still {
+    text-decoration: none;
+    display: grid;
+    gap: 6px;
+    align-content: start;
+  }
+  .still-img {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-3);
+    box-shadow: 0 0 0 1px var(--line);
+    margin-bottom: 12px;
+  }
+  .still-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    filter: grayscale(0.85) contrast(1.05) brightness(0.85);
+    transition: filter 0.6s var(--ease), transform 0.8s var(--ease);
+  }
+  .still:hover .still-img img {
+    filter: none;
+    transform: scale(1.03);
+  }
+  .still-blank {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    font-size: 34px;
+    color: var(--accent);
+    background: radial-gradient(circle at 50% 40%, rgb(255 181 71 / 0.12), transparent 70%);
+  }
+  .still-year {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    font-size: 11px;
+    background: rgb(0 0 0 / 0.65);
+    padding: 4px 7px;
+    border-radius: 4px;
+  }
+  .still h3 {
+    margin: 0;
+    font-size: 21px;
+    letter-spacing: -0.02em;
+  }
+  .still p {
+    margin: 0;
+    color: var(--dim);
+    font-size: 15px;
+  }
+
+  /* ── Movies ────────────────────────────────────────── */
+  .pick {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(150px, 230px) 1fr;
+    gap: clamp(20px, 4vw, 52px);
+    align-items: center;
+    padding: clamp(20px, 4vw, 48px);
+    border-radius: 16px;
+    overflow: hidden;
+    text-decoration: none;
+    background: var(--bg-2);
+    box-shadow: 0 0 0 1px var(--line);
+    margin-bottom: 40px;
+  }
+  .pick-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.28;
+    filter: blur(1px) saturate(0.8);
+    mask-image: linear-gradient(to left, #000 20%, transparent 90%);
+  }
+  .pick-poster,
+  .pick-copy {
+    position: relative;
+  }
+  .pick-copy h3 {
+    margin: 10px 0 2px;
+    font-size: clamp(32px, 5vw, 64px);
+    line-height: 0.95;
+    letter-spacing: -0.045em;
+  }
+  .pick-copy h3 .dim {
+    font-weight: 400;
+    font-size: 0.5em;
+    letter-spacing: 0;
+  }
+  .dir {
+    margin: 4px 0 16px;
+    font-size: 22px;
+    color: var(--dim);
+  }
+  .one {
+    font-family: var(--serif);
+    font-size: clamp(20px, 2.2vw, 28px);
+    line-height: 1.3;
+    max-width: 40ch;
+    margin: 18px 0;
+  }
+  .read {
+    display: block;
+    margin-top: 22px;
+    font-size: 11px;
+    color: var(--accent);
+  }
+  @media (max-width: 600px) {
+    .pick {
+      grid-template-columns: 110px 1fr;
+    }
+  }
+  .diary {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 900px) {
+    .diary {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  .d {
+    text-decoration: none;
+    display: grid;
+    gap: 8px;
+  }
+  .d :global(.mp) {
+    transition: transform 0.4s var(--ease);
+  }
+  .d:hover :global(.mp) {
+    transform: translateY(-4px);
+  }
+  .d-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .d-meta .mono {
+    font-size: 10px;
+  }
+  .empty {
+    border: 1px dashed var(--line-2);
+    border-radius: 16px;
+    padding: 48px 28px;
+    text-align: center;
+  }
+  .empty .serif {
+    font-size: 32px;
+    margin: 0 0 6px;
+  }
+
+  /* ── Notes ─────────────────────────────────────────── */
+  .notes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .notes a {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 24px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+  }
+  .n-title {
+    font-size: clamp(20px, 2.4vw, 28px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .n-date {
+    font-size: 11px;
+    grid-row: 1;
+    grid-column: 2;
+    align-self: center;
+  }
+  .n-sum {
+    grid-column: 1;
+    font-size: 15px;
+  }
+  .notes a:hover .n-title {
+    color: var(--accent);
+  }
+</style>

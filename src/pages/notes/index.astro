@@ -1,0 +1,82 @@
+---
+import Base from '../../layouts/Base.astro';
+import { url, fmtDate } from '../../lib/data';
+import { getNotes } from '../../lib/content';
+
+const notes = await getNotes();
+---
+
+<Base title="Notes" description="Writing on AI agents, building software, and reverse engineering.">
+  <section class="wrap">
+    <header class="page-head">
+      <span class="label">Director's notes</span>
+      <h1>Notes</h1>
+      <p>Write-ups on agents, the tools I build, and what I learn taking software apart.</p>
+    </header>
+    {
+      notes.length === 0 ? (
+        <p class="empty serif">First draft in progress.</p>
+      ) : (
+        <ul class="list">
+          {notes.map((n) => (
+            <li class="reveal">
+              <a href={url(`/notes/${n.id}/`)}>
+                <span class="mono date">{fmtDate(n.data.date)}</span>
+                <span class="title">{n.data.title}</span>
+                <span class="sum">{n.data.summary}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </section>
+</Base>
+
+<style>
+  .list {
+    list-style: none;
+    padding: 0;
+    margin: 72px 0 0;
+  }
+  .list a {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 4px 28px;
+    padding: 28px 0;
+    border-top: 1px solid var(--line);
+    text-decoration: none;
+  }
+  .date {
+    font-size: 12px;
+    color: var(--faint);
+    padding-top: 8px;
+    grid-row: span 2;
+  }
+  .title {
+    font-size: clamp(24px, 3vw, 36px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+  .sum {
+    color: var(--dim);
+  }
+  .list a:hover .title {
+    color: var(--accent);
+  }
+  @media (max-width: 640px) {
+    .list a {
+      grid-template-columns: 1fr;
+    }
+    .date {
+      grid-row: auto;
+      padding: 0;
+    }
+  }
+  .empty {
+    font-size: 28px;
+    margin-top: 64px;
+    color: var(--dim);
+  }
+</style>

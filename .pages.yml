@@ -1,0 +1,174 @@
+# Pages CMS (https://pagescms.org): edit this site from the browser.
+# Sign in with GitHub at https://app.pagescms.org, open this repo, and every
+# section below shows up as a form. Saving commits to GitHub, and the site redeploys.
+
+media:
+  input: public
+  output: /
+
+content:
+  - name: movies
+    label: 🎬 Movie diary
+    type: collection
+    path: src/content/movies
+    filename: '{fields.title}-{fields.year}.md'
+    view:
+      fields: [title, year, rating, watched]
+      primary: title
+      sort: [watched]
+      default: { sort: watched, order: desc }
+    fields:
+      - { name: title, label: Title, type: string, required: true }
+      - { name: year, label: Year, type: number, required: true }
+      - { name: director, label: Director, type: string }
+      - { name: runtime, label: Runtime (minutes), type: number }
+      - { name: watched, label: Watched on, type: date, required: true }
+      - { name: rating, label: Rating (0.5–5), type: number, options: { min: 0.5, max: 5, step: 0.5 } }
+      - { name: liked, label: Liked ♥, type: boolean }
+      - { name: rewatch, label: Rewatch, type: boolean }
+      - { name: favorite, label: In my Favourite Four, type: boolean }
+      - name: pick
+        label: Film of the…
+        type: select
+        options: { values: [month, week] }
+      - { name: oneLiner, label: One-line verdict, type: string }
+      - { name: poster, label: Poster image URL, type: string, description: 'Tip: run `npm run new movie "Title"` to fill this in automatically.' }
+      - { name: backdrop, label: Backdrop image URL (wide still), type: string }
+      - { name: tags, label: Tags, type: string, list: true }
+      - { name: draft, label: Draft (hidden), type: boolean }
+      - { name: body, label: Review, type: rich-text }
+
+  - name: notes
+    label: ✍️ Notes (blog)
+    type: collection
+    path: src/content/notes
+    filename: '{fields.title}.md'
+    view: { fields: [title, date, draft], primary: title, default: { sort: date, order: desc } }
+    fields:
+      - { name: title, label: Title, type: string, required: true }
+      - { name: date, label: Date, type: date, required: true }
+      - { name: summary, label: Summary, type: string, required: true }
+      - { name: tags, label: Tags, type: string, list: true }
+      - { name: draft, label: Draft (hidden), type: boolean }
+      - { name: body, label: Body, type: rich-text }
+
+  - name: products
+    label: 📦 Products
+    type: collection
+    path: src/content/products
+    view: { fields: [name, order, kind], primary: name }
+    fields:
+      - { name: name, label: Name, type: string, required: true }
+      - { name: tagline, label: Tagline, type: string, required: true }
+      - { name: order, label: Order on page, type: number }
+      - { name: repo, label: GitHub repo (owner/name), type: string, required: true }
+      - { name: asset, label: 'Release file for the download button (e.g. *.exe)', type: string }
+      - { name: platform, label: Platform, type: string, required: true }
+      - { name: language, label: Language, type: string, required: true }
+      - { name: genre, label: Genre, type: string, required: true }
+      - name: kind
+        label: Kind
+        type: select
+        options: { values: [download, self-host, coming-soon] }
+      - name: poster
+        label: Poster
+        type: object
+        fields:
+          - { name: bg, label: Background colour, type: string }
+          - { name: ink, label: Text colour, type: string }
+          - { name: accent, label: Accent colour, type: string }
+          - name: motif
+            label: Motif
+            type: select
+            options: { values: [stack, lens, nib, runner, seats, jet] }
+      - name: screenshots
+        label: Screenshots
+        type: object
+        list: true
+        fields:
+          - { name: src, label: Image, type: image }
+          - { name: alt, label: Description, type: string }
+      - { name: install, label: Install steps, type: string, list: true }
+      - { name: usage, label: How to use, type: string, list: true }
+      - { name: stack, label: Tech stack, type: string, list: true }
+      - { name: draft, label: Draft (hidden), type: boolean }
+      - { name: body, label: Write-up, type: rich-text }
+
+  - name: projects
+    label: 🎞️ Early works
+    type: collection
+    path: src/content/projects
+    view: { fields: [title, year, featured], primary: title }
+    fields:
+      - { name: title, label: Title, type: string, required: true }
+      - { name: year, label: Year, type: number, required: true }
+      - { name: summary, label: Summary, type: text, required: true }
+      - { name: stack, label: Stack, type: string, list: true }
+      - { name: repo, label: Code URL, type: string }
+      - { name: live, label: Live URL, type: string }
+      - { name: image, label: Screenshot, type: image }
+      - { name: featured, label: Show on home page, type: boolean }
+      - { name: order, label: Order, type: number }
+
+  - name: profile
+    label: 👤 Profile, skills, about
+    type: file
+    path: src/data/profile.yaml
+    format: yaml
+    fields:
+      - { name: name, label: Name, type: string }
+      - { name: short, label: First name, type: string }
+      - { name: roles, label: Roles, type: string, list: true }
+      - { name: location, label: Location, type: string }
+      - { name: availability, label: Availability line, type: string }
+      - { name: email, label: Email, type: string }
+      - { name: tagline, label: Tagline, type: string }
+      - { name: about, label: About (Markdown), type: text }
+      - { name: now, label: Currently, type: string, list: true }
+      - name: stats
+        label: Stats
+        type: object
+        list: true
+        fields:
+          - { name: value, type: string }
+          - { name: label, type: string }
+      - { name: resume, label: Résumé PDF, type: file }
+      - name: links
+        label: Links
+        type: object
+        fields:
+          - { name: github, type: string }
+          - { name: linkedin, type: string }
+          - { name: leetcode, type: string }
+          - { name: letterboxd, type: string }
+      - name: skills
+        label: Skills
+        type: object
+        list: true
+        fields:
+          - { name: group, type: string }
+          - { name: items, type: string, list: true }
+      - name: education
+        label: Education
+        type: object
+        list: true
+        fields:
+          - { name: school, type: string }
+          - { name: degree, type: string }
+          - { name: years, type: string }
+
+  - name: experience
+    label: 💼 Experience
+    type: file
+    path: src/data/experience.yaml
+    format: yaml
+    list: true
+    fields:
+      - { name: id, label: 'ID (unique, lowercase)', type: string }
+      - { name: role, label: Role, type: string }
+      - { name: company, label: Company, type: string }
+      - { name: location, label: Location, type: string }
+      - { name: start, label: Start (e.g. Jul 2025), type: string }
+      - { name: end, label: End (or Present), type: string }
+      - { name: points, label: Bullet points, type: string, list: true }
+      - { name: stack, label: Stack, type: string, list: true }
