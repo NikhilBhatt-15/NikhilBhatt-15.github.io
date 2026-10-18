@@ -16,6 +16,7 @@ export interface Profile {
   links: Record<string, string>;
   skills: { group: string; items: string[] }[];
   education: { school: string; degree: string; years: string }[];
+  intro?: Partial<{ enabled: boolean; everyVisit: boolean; respectReducedMotion: boolean; count: number; beatMs: number; hint: string }>;
 }
 
 export const profile: Profile = parse(readFileSync('src/data/profile.yaml', 'utf8'));
@@ -36,7 +37,9 @@ export function inlineMd(s: string): string {
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, href) =>
+      /^https?:/.test(href) ? `<a href="${href}" target="_blank" rel="noopener">${text}</a>` : `<a href="${url(href)}">${text}</a>`,
+    );
 }
 
 /** Block Markdown for short strings: paragraphs, fenced code, plus inline formatting. */
@@ -54,3 +57,23 @@ export function blockMd(s: string): string {
     })
     .join('');
 }
+
+export interface Freelance {
+  open: boolean;
+  headline: string;
+  intro: string;
+  services: { title: string; blurb: string; items: string[] }[];
+  process: { title: string; text: string }[];
+  meetings: {
+    days: string[];
+    from: string;
+    to: string;
+    slotMinutes: number;
+    timezone: string;
+    weeksAhead: number;
+    calLink?: string;
+  };
+  faq: { q: string; a: string }[];
+}
+
+export const freelance: Freelance = parse(readFileSync('src/data/freelance.yaml', 'utf8'));

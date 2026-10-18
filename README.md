@@ -20,6 +20,9 @@ install guides), my work history, early projects, notes, and a movie diary.
 - **The watchlist.** A Letterboxd-style movie diary with half-star ratings, likes,
   rewatches, film of the month/week, Favourite Four, stats and a ratings histogram.
 - **Director's notes.** A Markdown blog with RSS.
+- **Hire me.** Freelance services, process and FAQ, plus a weekend-call booker that works
+  without a backend. Slots show in the visitor's time zone, and the request goes out as a
+  Google Calendar invite, an email or an `.ics` file.
 - Film grain, a projector-light cursor glow, a scroll timecode and end credits. Responsive
   and accessible, and fast because it's static HTML with almost no JavaScript.
 
@@ -58,6 +61,8 @@ runtimes, get a free [TMDB API key](https://www.themoviedb.org/settings/api) and
 |---|---|
 | Name, tagline, about, "currently", stats, skills, links, education | `src/data/profile.yaml` |
 | Jobs | `src/data/experience.yaml` |
+| Freelance page: services, process, FAQ, meeting days/hours, Cal.com link | `src/data/freelance.yaml` |
+| Opening countdown (on/off, every visit, numbers, speed) | `intro:` in `src/data/profile.yaml` |
 | Résumé PDF | replace `public/resume.pdf` |
 | A product's text, install steps, shortcuts, poster colours | `src/content/products/<name>.md` |
 | Movies | `src/content/movies/*.md` |
@@ -72,6 +77,11 @@ Common moves:
 - **Hide something:** `draft: true`. Drafts show on `npm run dev` but not on the live site.
 - **Write a review:** put it under the `---` in the movie's file. Leave it empty to just
   log the watch.
+- **Meeting hours:** `meetings:` in `freelance.yaml` (days, from/to, slot length, time zone).
+  Bookings arrive as a Google Calendar invite or an email. For instant self-booking, make a free
+  Cal.com event and put its link in `calLink`. The page then embeds it.
+- **Pause freelance:** `open: false` in `freelance.yaml` hides the badges and the booking widget.
+- **Replay the intro:** use the "replay opening titles" link in the footer, or add `?intro` to the URL.
 - **New product release:** just publish the GitHub release. The site picks it up on the next
   daily build, or run the **Deploy** workflow from the Actions tab to update right away.
 

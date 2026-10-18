@@ -1,0 +1,596 @@
+---
+import Base from '../layouts/Base.astro';
+import { profile, freelance, blockMd } from '../lib/data';
+
+const f = freelance;
+const m = f.meetings;
+const booking = { ...m, email: profile.email, name: profile.name };
+const days = m.days.join(' & ');
+---
+
+<Base title="Hire me" description={`Freelance AI agents, voice AI and full-stack work by ${profile.name}. Book a free weekend call.`}>
+  <section class="wrap">
+    <header class="page-head">
+      <span class="label">
+        {f.open ? <span class="open"><span class="dot" />Now casting · open for freelance</span> : 'Freelance'}
+      </span>
+      <h1 set:html={f.headline.replace(/(\S+)$/, '<em>$1</em>')} />
+      <div class="intro" set:html={blockMd(f.intro)} />
+      <div class="cta-row">
+        {f.open && <a class="btn primary" href="#book">Book a free call ↓</a>}
+        <a class="btn" href={`mailto:${profile.email}?subject=Freelance%20project`}>Email me</a>
+      </div>
+    </header>
+
+    <!-- What I do -->
+    <section class="block">
+      <h2 class="sub">What I can <em>direct</em></h2>
+      <div class="services">
+        {
+          f.services.map((s, i) => (
+            <article class="svc reveal">
+              <span class="mono num">{String(i + 1).padStart(2, '0')}</span>
+              <h3>{s.title}</h3>
+              <p>{s.blurb}</p>
+              <ul class="chips">
+                {s.items.map((x) => (
+                  <li>{x}</li>
+                ))}
+              </ul>
+            </article>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- Process -->
+    <section class="block">
+      <h2 class="sub">How a production <em>runs</em></h2>
+      <ol class="process">
+        {
+          f.process.map((p, i) => (
+            <li class="reveal">
+              <span class="mono step">Act {['I', 'II', 'III', 'IV', 'V', 'VI'][i]}</span>
+              <h3>{p.title}</h3>
+              <p>{p.text}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <!-- Booking -->
+    {
+      f.open && (
+        <section class="block" id="book">
+          <h2 class="sub">
+            Book a <em>screening</em>
+          </h2>
+          <p class="lede">
+            A free {m.slotMinutes}-minute call, {days}. Pick a slot and tell me about the project.
+          </p>
+
+          {m.calLink ? (
+            <div class="cal">
+              <iframe
+                src={`https://cal.com/${m.calLink}?embed=true&theme=dark&layout=month_view`}
+                title="Book a call"
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            <div class="booker" id="booker" data-config={JSON.stringify(booking)}>
+              <div class="step-a">
+                <p class="mono label">1 · Pick a day</p>
+                <div class="dates" role="radiogroup" aria-label="Day" />
+                <p class="mono label">
+                  2 · Pick a time <span class="tzline" />
+                </p>
+                <div class="slots" role="radiogroup" aria-label="Time" />
+              </div>
+
+              <form class="step-b" novalidate>
+                <p class="mono label">3 · About you and the project</p>
+                <div class="grid2">
+                  <label>
+                    Name
+                    <input name="name" required autocomplete="name" />
+                  </label>
+                  <label>
+                    Email
+                    <input name="email" type="email" required autocomplete="email" />
+                  </label>
+                </div>
+                <label>
+                  What do you need?
+                  <select name="service">
+                    {f.services.map((s) => (
+                      <option>{s.title}</option>
+                    ))}
+                    <option>Something else</option>
+                  </select>
+                </label>
+                <label>
+                  The idea, in a few lines
+                  <textarea name="message" rows="4" placeholder="What are you building, for whom, and by when?" />
+                </label>
+                <p class="err" role="alert" />
+                <button class="btn primary" type="submit">
+                  Request this slot →
+                </button>
+              </form>
+
+              <div class="done" hidden>
+                <p class="mono label">Almost done</p>
+                <h3 class="when" />
+                <p class="dim">
+                  Send the request one of these ways. I'll confirm by email, usually within a day.
+                </p>
+                <div class="cta-row">
+                  <a class="btn primary gcal" target="_blank" rel="noopener">
+                    Send calendar invite (Google)
+                  </a>
+                  <a class="btn mail">Send by email</a>
+                  <a class="btn ics" download="call-with-nikhil.ics">
+                    Download .ics
+                  </a>
+                </div>
+                <button class="back mono" type="button">
+                  ← Change the slot
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+      )
+    }
+
+    <!-- FAQ -->
+    <section class="block">
+      <h2 class="sub">Before you <em>ask</em></h2>
+      <div class="faq">
+        {
+          f.faq.map((x) => (
+            <details>
+              <summary>{x.q}</summary>
+              <p>{x.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+  </section>
+</Base>
+
+<script>
+  type Cfg = {
+    days: string[];
+    from: string;
+    to: string;
+    slotMinutes: number;
+    timezone: string;
+    weeksAhead: number;
+    email: string;
+    name: string;
+  };
+  const root = document.getElementById('booker');
+  if (root) {
+    const cfg: Cfg = JSON.parse(root.dataset.config!);
+    const tz = cfg.timezone;
+    const here = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    // Offset (ms) of `tz` from UTC at a given instant.
+    const offset = (d: Date) => {
+      const p = Object.fromEntries(
+        new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' })
+          .formatToParts(d)
+          .map((x) => [x.type, x.value]),
+      );
+      return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second) - d.getTime();
+    };
+    // A wall-clock time in `tz` → the real instant.
+    const zoned = (y: number, mo: number, d: number, h: number, mi: number) => {
+      const guess = Date.UTC(y, mo, d, h, mi);
+      return new Date(guess - offset(new Date(guess)));
+    };
+    const ymd = (d: Date) => {
+      const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'long' }).formatToParts(d).map((x) => [x.type, x.value]));
+      return { y: +p.year, m: +p.month - 1, d: +p.day, wd: p.weekday };
+    };
+    const [fh, fm] = cfg.from.split(':').map(Number);
+    const [th, tm] = cfg.to.split(':').map(Number);
+    const earliest = Date.now() + 12 * 3600e3; // at least 12 hours' notice
+
+    // Build the list of days with their slots.
+    const days: { label: string; slots: Date[] }[] = [];
+    for (let i = 0; i < cfg.weeksAhead * 7; i++) {
+      const day = ymd(new Date(Date.now() + i * 864e5));
+      if (!cfg.days.includes(day.wd)) continue;
+      const slots: Date[] = [];
+      for (let t = fh * 60 + fm; t + cfg.slotMinutes <= th * 60 + tm; t += cfg.slotMinutes) {
+        const s = zoned(day.y, day.m, day.d, Math.floor(t / 60), t % 60);
+        if (s.getTime() > earliest) slots.push(s);
+      }
+      if (slots.length) {
+        const label = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'short', day: 'numeric', month: 'short' }).format(slots[0]);
+        days.push({ label, slots });
+      }
+    }
+
+    const fmt = (d: Date, zone: string) => new Intl.DateTimeFormat('en-GB', { timeZone: zone, hour: '2-digit', minute: '2-digit' }).format(d);
+    const short = (zone: string) =>
+      new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'short' }).formatToParts(new Date()).find((x) => x.type === 'timeZoneName')!.value;
+    const tzName = tz === 'Asia/Kolkata' ? 'IST' : short(tz);
+    const sameZone = offset(new Date()) === -new Date().getTimezoneOffset() * 60e3;
+    root.querySelector('.tzline')!.textContent = sameZone ? `(${tzName})` : `(${tzName} · your time in brackets)`;
+
+    const err = root.querySelector('.err')!;
+    const datesEl = root.querySelector('.dates')!;
+    const slotsEl = root.querySelector('.slots')!;
+    let pickedDay = 0;
+    let picked: Date | null = null;
+
+    const renderSlots = () => {
+      slotsEl.innerHTML = '';
+      days[pickedDay].slots.forEach((s) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip' + (picked?.getTime() === s.getTime() ? ' on' : '');
+        b.setAttribute('role', 'radio');
+        b.setAttribute('aria-checked', String(picked?.getTime() === s.getTime()));
+        b.innerHTML = `${fmt(s, tz)}${sameZone ? '' : ` <span>(${fmt(s, here)})</span>`}`;
+        b.onclick = () => {
+          picked = s;
+          err.textContent = '';
+          renderSlots();
+        };
+        slotsEl.append(b);
+      });
+    };
+    const renderDays = () => {
+      datesEl.innerHTML = '';
+      days.forEach((d, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip day' + (i === pickedDay ? ' on' : '');
+        b.setAttribute('role', 'radio');
+        b.setAttribute('aria-checked', String(i === pickedDay));
+        b.textContent = d.label;
+        b.onclick = () => {
+          pickedDay = i;
+          picked = null;
+          renderDays();
+          renderSlots();
+        };
+        datesEl.append(b);
+      });
+    };
+    if (days.length) {
+      renderDays();
+      renderSlots();
+    } else {
+      datesEl.textContent = 'No slots open right now. Email me instead.';
+    }
+
+    // Submit → build invite links.
+    const form = root.querySelector<HTMLFormElement>('.step-b')!;
+    const done = root.querySelector<HTMLElement>('.done')!;
+    const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form)) as Record<string, string>;
+      if (!picked) return void (err.textContent = 'Pick a day and a time first.');
+      if (!data.name?.trim() || !/^\S+@\S+\.\S+$/.test(data.email ?? '')) return void (err.textContent = 'Add your name and a valid email.');
+      err.textContent = '';
+      const end = new Date(picked.getTime() + cfg.slotMinutes * 60e3);
+      const when = `${new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long' }).format(picked)}, ${fmt(picked, tz)}–${fmt(end, tz)} ${tzName}`;
+      const title = `Freelance call: ${data.name} × ${cfg.name}`;
+      const details = `${data.service}\n\n${data.message || ''}\n\nFrom: ${data.name} <${data.email}>\n(Requested via the portfolio booking page)`;
+      root.querySelector('.when')!.textContent = when;
+      root.querySelector<HTMLAnchorElement>('.gcal')!.href =
+        'https://calendar.google.com/calendar/render?' +
+        new URLSearchParams({ action: 'TEMPLATE', text: title, dates: `${stamp(picked)}/${stamp(end)}`, details, add: cfg.email, location: 'Google Meet (link to follow)' });
+      root.querySelector<HTMLAnchorElement>('.mail')!.href =
+        `mailto:${cfg.email}?subject=${encodeURIComponent(`Call request: ${when}`)}&body=${encodeURIComponent(`Hi ${cfg.name.split(' ')[0]},\n\nI'd like to book a call on ${when}.\n\n${details}`)}`;
+      const ics = [
+        'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//portfolio//booking//EN', 'METHOD:REQUEST', 'BEGIN:VEVENT',
+        `UID:${stamp(picked)}-${Math.random().toString(36).slice(2)}@portfolio`, `DTSTAMP:${stamp(new Date())}`,
+        `DTSTART:${stamp(picked)}`, `DTEND:${stamp(end)}`, `SUMMARY:${title}`,
+        `DESCRIPTION:${details.replace(/\n/g, '\\n')}`, `ATTENDEE;CN=${cfg.name}:mailto:${cfg.email}`,
+        `ATTENDEE;CN=${data.name}:mailto:${data.email}`, 'END:VEVENT', 'END:VCALENDAR',
+      ].join('\r\n');
+      root.querySelector<HTMLAnchorElement>('.ics')!.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+      root.querySelector<HTMLElement>('.step-a')!.hidden = true;
+      form.hidden = true;
+      done.hidden = false;
+      done.scrollIntoView({ block: 'center' });
+    });
+    root.querySelector('.back')!.addEventListener('click', () => {
+      root.querySelector<HTMLElement>('.step-a')!.hidden = false;
+      form.hidden = false;
+      done.hidden = true;
+    });
+  }
+</script>
+
+<style>
+  .open {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #4ade80;
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 10px #4ade80;
+  }
+  .intro :global(p) {
+    max-width: 60ch;
+    color: var(--dim);
+    font-size: 19px;
+  }
+  .cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 28px;
+  }
+  .block {
+    margin-top: clamp(90px, 12vw, 140px);
+  }
+  .sub {
+    font-size: clamp(34px, 5vw, 64px);
+    letter-spacing: -0.045em;
+    line-height: 1;
+    margin: 0 0 32px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sub em {
+    font-family: var(--serif);
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .lede {
+    color: var(--dim);
+    font-size: 18px;
+    margin: -10px 0 28px;
+  }
+
+  .services {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: 16px;
+  }
+  .svc {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 26px;
+    display: grid;
+    gap: 10px;
+    align-content: start;
+    transition: border-color 0.3s;
+  }
+  .svc:hover {
+    border-color: rgb(255 181 71 / 0.4);
+  }
+  .num {
+    font-size: 11px;
+    color: var(--accent);
+  }
+  .svc h3 {
+    margin: 0;
+    font-size: 24px;
+    letter-spacing: -0.03em;
+  }
+  .svc p {
+    margin: 0 0 6px;
+    color: var(--dim);
+    font-size: 15.5px;
+  }
+
+  .process {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .process li {
+    padding: 26px;
+    border-right: 1px solid var(--line);
+  }
+  .process li:last-child {
+    border-right: 0;
+  }
+  .step {
+    font-size: 11px;
+    color: var(--accent);
+  }
+  .process h3 {
+    margin: 8px 0 6px;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+  }
+  .process p {
+    margin: 0;
+    color: var(--dim);
+    font-size: 15px;
+  }
+  @media (max-width: 960px) {
+    .process li {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+  }
+
+  /* Booking */
+  .booker {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 40px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: clamp(20px, 4vw, 40px);
+  }
+  @media (max-width: 860px) {
+    .booker {
+      grid-template-columns: 1fr;
+    }
+  }
+  .booker .label {
+    margin: 0 0 12px;
+  }
+  .step-a .label + * {
+    margin-bottom: 28px;
+  }
+  .tzline {
+    color: var(--faint);
+  }
+  .dates,
+  .slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .booker :global(.chip) {
+    font: 500 13px var(--mono);
+    color: var(--ink);
+    background: var(--bg-3);
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .booker :global(.chip span) {
+    color: var(--dim);
+    font-size: 11px;
+  }
+  .booker :global(.chip:hover) {
+    border-color: var(--accent);
+  }
+  .booker :global(.chip.on) {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .booker :global(.chip.on span) {
+    color: var(--accent-ink);
+  }
+  .step-b {
+    display: grid;
+    gap: 14px;
+    align-content: start;
+  }
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 480px) {
+    .grid2 {
+      grid-template-columns: 1fr;
+    }
+  }
+  label {
+    display: grid;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--dim);
+  }
+  input,
+  select,
+  textarea {
+    font: 15px var(--display);
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    width: 100%;
+  }
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  textarea {
+    resize: vertical;
+  }
+  .err {
+    color: var(--red);
+    margin: 0;
+    font-size: 14px;
+    min-height: 1em;
+  }
+  .step-b .btn {
+    justify-self: start;
+  }
+  .done {
+    grid-column: 1 / -1;
+  }
+  .done[hidden],
+  .step-a[hidden],
+  .step-b[hidden] {
+    display: none;
+  }
+  .when {
+    font-size: clamp(24px, 3vw, 36px);
+    letter-spacing: -0.03em;
+    margin: 0 0 8px;
+  }
+  .back {
+    margin-top: 22px;
+    background: none;
+    border: 0;
+    color: var(--dim);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+  }
+  .cal iframe {
+    width: 100%;
+    height: 720px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--bg-2);
+  }
+
+  .faq details {
+    border-bottom: 1px solid var(--line);
+    padding: 18px 0;
+  }
+  .faq summary {
+    cursor: pointer;
+    font-size: 19px;
+    font-weight: 600;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .faq summary::after {
+    content: '+';
+    color: var(--accent);
+    font-weight: 400;
+  }
+  .faq details[open] summary::after {
+    content: '−';
+  }
+  .faq p {
+    color: var(--dim);
+    margin: 10px 0 0;
+    max-width: 70ch;
+  }
+</style>

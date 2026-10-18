@@ -133,6 +133,16 @@ content:
           - { name: value, type: string }
           - { name: label, type: string }
       - { name: resume, label: Résumé PDF, type: file }
+      - name: intro
+        label: Opening countdown (home page)
+        type: object
+        fields:
+          - { name: enabled, label: Play automatically, type: boolean }
+          - { name: everyVisit, label: Play on every visit (not once per tab), type: boolean }
+          - { name: respectReducedMotion, label: Skip for visitors who turned animations off, type: boolean }
+          - { name: count, label: Start number, type: number }
+          - { name: beatMs, label: Milliseconds per number, type: number }
+          - { name: hint, label: Skip hint text, type: string }
       - name: links
         label: Links
         type: object
@@ -156,6 +166,49 @@ content:
           - { name: school, type: string }
           - { name: degree, type: string }
           - { name: years, type: string }
+
+  - name: freelance
+    label: 🤝 Freelance / Hire me
+    type: file
+    path: src/data/freelance.yaml
+    format: yaml
+    fields:
+      - { name: open, label: Open for freelance (shows badges + booking), type: boolean }
+      - { name: headline, label: Headline, type: string }
+      - { name: intro, label: Intro (Markdown), type: text }
+      - name: services
+        label: Services
+        type: object
+        list: true
+        fields:
+          - { name: title, type: string }
+          - { name: blurb, type: text }
+          - { name: items, type: string, list: true }
+      - name: process
+        label: Process steps
+        type: object
+        list: true
+        fields:
+          - { name: title, type: string }
+          - { name: text, type: text }
+      - name: meetings
+        label: Meeting slots
+        type: object
+        fields:
+          - { name: days, label: 'Days (e.g. Saturday)', type: string, list: true }
+          - { name: from, label: 'First slot (HH:MM)', type: string }
+          - { name: to, label: 'Last slot ends by (HH:MM)', type: string }
+          - { name: slotMinutes, label: Call length (minutes), type: number }
+          - { name: timezone, label: 'Time zone (e.g. Asia/Kolkata)', type: string }
+          - { name: weeksAhead, label: Weeks shown ahead, type: number }
+          - { name: calLink, label: 'Cal.com link (optional, e.g. nikhilbhatt/30min)', type: string }
+      - name: faq
+        label: FAQ
+        type: object
+        list: true
+        fields:
+          - { name: q, label: Question, type: string }
+          - { name: a, label: Answer, type: text }
 
   - name: experience
     label: 💼 Experience

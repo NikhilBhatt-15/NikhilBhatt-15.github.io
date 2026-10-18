@@ -10,6 +10,7 @@ interface Props {
   leader?: boolean; // play the film-leader countdown (home page only)
 }
 const { title, description = profile.tagline, image, leader = false } = Astro.props;
+const intro = { enabled: true, everyVisit: false, respectReducedMotion: true, count: 3, beatMs: 700, hint: 'Click or press any key to skip', ...profile.intro };
 const fullTitle = title ? `${title} · ${profile.name}` : `${profile.name}: ${profile.roles.join(' & ')}`;
 const path = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(/\/$/, ''), '') || '/';
 const nav = [
@@ -49,12 +50,21 @@ const ogImage = new URL(image ?? url('/og.jpg'), Astro.site);
 
     {
       leader && (
-        <div class="leader" id="leader" aria-hidden="true">
+        <div
+          class="leader"
+          id="leader"
+          aria-hidden="true"
+          data-enabled={String(intro.enabled)}
+          data-every={String(intro.everyVisit)}
+          data-respect-reduced-motion={String(intro.respectReducedMotion)}
+          data-count={intro.count}
+          data-beat={intro.beatMs}
+        >
           <div class="leader-ring">
             <span class="leader-sweep" />
-            <span class="leader-num">3</span>
+            <span class="leader-num">{intro.count}</span>
           </div>
-          <span class="leader-hint mono">Click or press any key to skip</span>
+          <span class="leader-hint mono">{intro.hint}</span>
         </div>
       )
     }
@@ -80,13 +90,15 @@ const ogImage = new URL(image ?? url('/og.jpg'), Astro.site);
             }
           </ul>
         </nav>
-        <a class="nav-cta" href={url(profile.resume)} download>Résumé ↓</a>
+        <a class="nav-cv" href={url(profile.resume)} download>Résumé ↓</a>
+        <a class="nav-cta" href={url('/hire/')} aria-current={path.startsWith('/hire/') ? 'page' : undefined}>Hire me</a>
         <button class="menu" aria-expanded="false" aria-controls="mobile-nav" aria-label="Menu">
           <span></span><span></span>
         </button>
       </div>
       <div class="mobile-nav" id="mobile-nav" hidden>
         {nav.map(([label, href]) => <a href={url(href)}>{label}</a>)}
+        <a href={url('/hire/')}>Hire me</a>
         <a href={url(profile.resume)} download>Résumé ↓</a>
       </div>
     </header>
@@ -152,6 +164,7 @@ const ogImage = new URL(image ?? url('/og.jpg'), Astro.site);
         padding: 0;
       }
       nav a,
+      .nav-cv,
       .nav-cta {
         font: 500 12px/1 var(--mono);
         letter-spacing: 0.09em;
@@ -160,18 +173,20 @@ const ogImage = new URL(image ?? url('/og.jpg'), Astro.site);
         color: var(--dim);
       }
       nav a[aria-current],
-      nav a:hover {
+      nav a:hover,
+      .nav-cv:hover {
         color: var(--ink);
       }
       .nav-cta {
-        color: var(--accent);
-        border: 1px solid rgb(255 181 71 / 0.4);
-        padding: 9px 13px;
+        color: var(--accent-ink);
+        background: var(--accent);
+        font-weight: 700;
+        padding: 9px 14px;
         border-radius: 999px;
       }
       .nav-cta:hover {
-        background: var(--accent);
-        color: var(--accent-ink);
+        background: var(--ink);
+        color: var(--bg);
       }
       .menu {
         display: none;
@@ -213,6 +228,7 @@ const ogImage = new URL(image ?? url('/og.jpg'), Astro.site);
       }
       @media (max-width: 860px) {
         nav,
+        .nav-cv,
         .nav-cta {
           display: none;
         }
@@ -403,44 +419,66 @@ const ogImage = new URL(image ?? url('/og.jpg'), Astro.site);
       document.fonts.addEventListener('loadingdone', refit);
       document.fonts.load('900 100px "Inter Tight Variable"').then(refit, () => {});
 
-      // ── Leader countdown, once per session, never with reduced motion
+      // ── Leader countdown. Settings live in profile.yaml → intro.
       const leader = document.getElementById('leader');
-      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-      let seen = false;
-      try {
-        seen = sessionStorage.getItem('leader') === '1';
-        sessionStorage.setItem('leader', '1');
-      } catch {}
-      if (leader && !seen && !reduce) {
-        leader.classList.add('play');
-        document.documentElement.classList.add('leader-on');
+      const root = document.documentElement;
+      const play = () => {
+        if (!leader) return;
         const num = leader.querySelector('.leader-num')!;
         const sweep = leader.querySelector<HTMLElement>('.leader-sweep')!;
+        const count = Number(leader.dataset.count) || 3;
+        const dur = Number(leader.dataset.beat) || 700;
+        leader.classList.remove('done');
+        leader.classList.add('play');
+        root.classList.remove('rolled');
+        root.classList.add('leader-on');
+        scrollTo(0, 0);
         const start = performance.now();
-        const dur = 700;
         let raf = 0;
         const end = () => {
           cancelAnimationFrame(raf);
           leader.classList.add('done');
-          document.documentElement.classList.remove('leader-on');
-          document.documentElement.classList.add('rolled');
+          root.classList.remove('leader-on');
+          requestAnimationFrame(() => root.classList.add('rolled'));
           removeEventListener('keydown', end);
           leader.removeEventListener('click', end);
         };
         const tick = (t: number) => {
           const el = t - start;
-          const n = 3 - Math.floor(el / dur);
+          const n = count - Math.floor(el / dur);
           if (n < 1) return end();
           num.textContent = String(n);
           sweep.style.setProperty('--a', `${((el % dur) / dur) * 360}deg`);
           raf = requestAnimationFrame(tick);
         };
         raf = requestAnimationFrame(tick);
-        addEventListener('keydown', end);
-        leader.addEventListener('click', end);
-      } else {
-        document.documentElement.classList.add('rolled');
-      }
+        setTimeout(() => {
+          addEventListener('keydown', end);
+          leader.addEventListener('click', end);
+        }, 150);
+      };
+      const forced = new URLSearchParams(location.search).has('intro');
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let seen = false;
+      try {
+        seen = sessionStorage.getItem('leader') === '1';
+        sessionStorage.setItem('leader', '1');
+      } catch {}
+      const auto =
+        leader &&
+        leader.dataset.enabled === 'true' &&
+        (leader.dataset.every === 'true' || !seen) &&
+        !(reduce && leader.dataset.respectReducedMotion === 'true');
+      if (leader && (forced || auto)) play();
+      else root.classList.add('rolled');
+      // "Replay opening titles" buttons: play here on the home page, or go home and play.
+      document.querySelectorAll<HTMLElement>('[data-replay-intro]').forEach((b) =>
+        b.addEventListener('click', (e) => {
+          if (!leader) return;
+          e.preventDefault();
+          play();
+        }),
+      );
     </script>
   </body>
 </html>

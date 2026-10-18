@@ -1,10 +1,21 @@
-# Newest first. Each entry needs a unique id.
+# Order doesn't matter: the site sorts by date ("Present" first). Each entry needs a unique id.
+- id: hiringbazaar
+  role: Software Engineer (part-time)
+  company: Hiring Bazaar AI
+  location: Remote
+  start: Aug 2026
+  end: Present
+  points:
+    - Building the platform's AI agent layer end to end as a part-time, contract engineer.
+    - Building the AI interview product, a real-time voice interviewer on LiveKit (WebRTC) that runs the conversation, handles turn-taking and produces structured evaluations.
+  stack: [Python, LiveKit Agents, WebRTC, LLM APIs, Speech-to-text, Text-to-speech]
+
 - id: lytehire
   role: Software Engineer (first engineer)
   company: LyteHire AI
   location: Delhi, India
   start: Jul 2025
-  end: Present
+  end: Aug 2026
   points:
     - Joined as the first engineer at a B2B SaaS startup and built the whole product from scratch, including its core AI agent workflows, in Python and the PERN stack.
     - Built a document-automation pipeline (LLM APIs + pgvector) that parses resumes and scores candidates against job descriptions with structured extraction and vector retrieval.

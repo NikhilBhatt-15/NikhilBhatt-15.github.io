@@ -1,0 +1,55 @@
+# ─────────────────────────────────────────────────────────────
+#  Freelance / "Hire me" page. Edit anything here and push.
+# ─────────────────────────────────────────────────────────────
+
+open: true # false hides the "available" badges and the booking widget
+headline: Let's make your feature.
+intro: |
+  I take on a small number of freelance projects alongside my work. That's usually AI agents,
+  voice AI and full-stack products, built end to end and handed over with the source and docs.
+  Tell me what you're making and we'll find a weekend slot to talk it through.
+
+services:
+  - title: AI agents & automation
+    blurb: Agents that do real work with your tools and data, with a human approval step wherever judgment matters.
+    items: ['Tool-calling agents (Google ADK, LangGraph)', Email / chat / workflow agents, Human-in-the-loop review, Evaluation and guardrails]
+  - title: Voice AI
+    blurb: Real-time voice agents for interviews, support or sales calls, with low-latency turn-taking.
+    items: [LiveKit / WebRTC voice agents, Speech-to-text → LLM → speech pipelines, Call summaries and structured reports]
+  - title: RAG & document AI
+    blurb: Search, chat and extraction over your own documents, built on Postgres so it stays simple to run.
+    items: [Chat with your docs, Resume / invoice / form parsing, pgvector search, Structured extraction]
+  - title: Full-stack products & MVPs
+    blurb: From an empty repo to a deployed product. That's how I built LyteHire as its first engineer.
+    items: [Next.js / React front ends, FastAPI or Node back ends, PostgreSQL + Redis, Deploy on GCP / Vercel with CI/CD]
+  - title: Windows desktop tools
+    blurb: Small, fast native utilities like the ones on this site, with no runtime, an installer-free exe and a few MB.
+    items: [Rust or C++ Win32 apps, Tray tools and global hotkeys, Taskbar / shell integration]
+
+process:
+  - { title: Weekend call, text: 'A free 30-minute call on a Saturday or Sunday. You walk me through the idea and I ask a lot of questions.' }
+  - { title: Proposal, text: 'Within a couple of days you get the scope, milestones, timeline and a fixed quote in writing.' }
+  - { title: Build, text: 'Work happens in milestones with a demo at each one, so you see progress, not just hear about it.' }
+  - { title: Handover, text: 'You get the full source, docs and a deployed app. The code is yours.' }
+
+# Meeting slots offered in the booking widget.
+meetings:
+  days: [Saturday, Sunday] # any of Monday…Sunday
+  from: '10:00' # first slot start, in the time zone below
+  to: '19:00' # last slot must end by this time
+  slotMinutes: 30
+  timezone: Asia/Kolkata
+  weeksAhead: 4
+  # Optional: a free Cal.com page (e.g. "nikhilbhatt/30min") that books straight into your
+  # calendar. When set, the page embeds it. When empty, the built-in picker sends you an invite.
+  calLink: ''
+
+faq:
+  - q: Where are you based? Do you work with clients abroad?
+    a: Delhi NCR, India (IST, UTC+5:30). Everything is remote, and the booking widget shows slots in your own time zone too.
+  - q: Why only weekends for calls?
+    a: Weekdays go to building. Weekend calls give your project my full attention, without squeezing it between other meetings.
+  - q: How do you price projects?
+    a: Usually a fixed quote per milestone, agreed before any work starts. Ongoing work can be a monthly retainer.
+  - q: Who owns the code?
+    a: You do. You get the full source, setup docs and deployment, with nothing locked to me.

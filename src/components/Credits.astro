@@ -21,7 +21,8 @@ const roll: [string, string][] = [
       Let's make<br /><em>something.</em>
     </h2>
     <div class="actions">
-      <a class="btn primary" href={`mailto:${profile.email}`}>{profile.email}</a>
+      <a class="btn primary" href={url('/hire/')}>Hire me for freelance</a>
+      <a class="btn" href={`mailto:${profile.email}`}>{profile.email}</a>
       <a class="btn" href={url(profile.resume)} download>Download résumé</a>
     </div>
     <p class="avail mono"><span class="dot"></span>{profile.availability}</p>
@@ -49,6 +50,7 @@ const roll: [string, string][] = [
           ))
         }
         <li><a href={url('/rss.xml')}>rss</a></li>
+        <li><a href={url('/?intro')} data-replay-intro>▶ replay opening titles</a></li>
       </ul>
       <p class="mono fine">© {year} {profile.name}. No animals were harmed. Several bugs were.</p>
     </div>

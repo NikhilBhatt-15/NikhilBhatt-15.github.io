@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import ProductCard from '../components/ProductCard.astro';
 import MoviePoster from '../components/MoviePoster.astro';
 import Stars from '../components/Stars.astro';
-import { profile, url, fmtDate, inlineMd } from '../lib/data';
+import { profile, freelance, url, fmtDate, inlineMd } from '../lib/data';
 import { getProducts, getProjects, getNotes, getMovies, getExperience, getPick } from '../lib/content';
 
 const products = await getProducts();
@@ -42,7 +42,7 @@ const marquee = products.map((p) => p.data.name.toUpperCase());
       <div class="hero-actions">
         <a class="btn primary" href="#now-showing">Now showing ↓</a>
         <a class="btn" href={url('/about/')}>Full credits</a>
-        <a class="btn" href={url(profile.resume)} download>Résumé</a>
+        <a class="btn" href={url('/hire/')}>Hire me</a>
       </div>
       <ul class="now">
         <li class="mono label">Currently filming</li>
@@ -87,6 +87,31 @@ const marquee = products.map((p) => p.data.name.toUpperCase());
       {products.map((p) => <ProductCard product={p} />)}
     </div>
   </section>
+
+  <!-- ── Freelance band ─────────────────────────────────── -->
+  {
+    freelance.open && (
+      <section class="wrap casting reveal" aria-label="Freelance">
+        <div class="cast-in">
+          <p class="label">
+            <span class="cast-dot" />
+            Now casting · freelance
+          </p>
+          <h2>
+            Got a project? <em>Let's shoot it.</em>
+          </h2>
+          <p class="dim">
+            {freelance.services.slice(0, 4).map((s) => s.title).join(' · ')}. Free {freelance.meetings.slotMinutes}-minute call,{' '}
+            {freelance.meetings.days.join(' & ')}.
+          </p>
+        </div>
+        <div class="cast-cta">
+          <a class="btn primary" href={url('/hire/#book')}>Book a weekend call</a>
+          <a class="btn" href={url('/hire/')}>What I do →</a>
+        </div>
+      </section>
+    )
+  }
 
   <!-- ── Reel 02: Filmography (experience) ──────────────── -->
   <section class="reel wrap" id="filmography" data-reel="02">
@@ -443,6 +468,68 @@ const marquee = products.map((p) => p.data.name.toUpperCase());
   }
   .products {
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  }
+
+  /* ── Freelance band ─────────────────────────────────── */
+  .casting {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+    margin-top: clamp(80px, 12vw, 140px);
+  }
+  .cast-in,
+  .cast-cta {
+    position: relative;
+  }
+  .casting::before {
+    content: '';
+    position: absolute;
+    inset: 0 var(--gutter);
+    border-radius: 20px;
+    background:
+      radial-gradient(ellipse 50% 120% at 0% 0%, rgb(255 181 71 / 0.16), transparent 70%),
+      var(--bg-2);
+    border: 1px solid rgb(255 181 71 / 0.25);
+  }
+  .casting {
+    position: relative;
+    padding-block: clamp(32px, 5vw, 56px);
+    padding-inline: calc(var(--gutter) + clamp(24px, 4vw, 48px));
+  }
+  .casting h2 {
+    margin: 10px 0 8px;
+    font-size: clamp(32px, 4.6vw, 60px);
+    line-height: 1;
+    letter-spacing: -0.045em;
+  }
+  .casting h2 em {
+    font-family: var(--serif);
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .casting .dim {
+    margin: 0;
+    max-width: 60ch;
+  }
+  .casting .label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #4ade80;
+  }
+  .cast-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 10px #4ade80;
+  }
+  .cast-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
   /* ── Filmography ───────────────────────────────────── */
