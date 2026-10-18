@@ -183,7 +183,7 @@ const marquee = products.map((p) => p.data.name.toUpperCase());
             {pick.data.director && <p class="serif dir">dir. {pick.data.director}</p>}
             <Stars rating={pick.data.rating} liked={pick.data.liked} size={18} />
             {pick.data.oneLiner && <p class="one">“{pick.data.oneLiner}”</p>}
-            <span class="mono read">Read the review →</span>
+            <span class="mono read">{pick.body?.trim() ? 'Read the review →' : 'Open the film →'}</span>
           </div>
         </a>
       ) : null

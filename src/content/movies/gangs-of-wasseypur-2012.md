@@ -2,7 +2,7 @@
 title: "Gangs of Wasseypur"
 year: 2012
 director: "Anurag Kashyap"
-watched: 2026-08-22
+watched: 2026-08-03
 rating: 4.5
 liked: true
 rewatch: false
@@ -12,5 +12,4 @@ oneLiner: ""       # one sentence that sums it up
 poster: "https://upload.wikimedia.org/wikipedia/en/6/6a/Gangs_of_Wasseypur_poster.jpg"
 # backdrop: https://…   (wide still for the film-of-the-month banner)
 tags: []
-draft: true   # SAMPLE: preview only. Set your own rating/review, then delete this line.
 ---

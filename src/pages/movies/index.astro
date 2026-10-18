@@ -88,7 +88,7 @@ for (const m of movies) {
             </p>
             <Stars rating={pick.data.rating} liked={pick.data.liked} size={20} />
             {pick.data.oneLiner && <p class="f-one">“{pick.data.oneLiner}”</p>}
-            <span class="mono f-read">Read the review →</span>
+            <span class="mono f-read">{pick.body?.trim() ? 'Read the review →' : 'Open the film →'}</span>
           </div>
         </a>
       )
