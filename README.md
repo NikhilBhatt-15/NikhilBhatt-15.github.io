@@ -63,6 +63,7 @@ runtimes, get a free [TMDB API key](https://www.themoviedb.org/settings/api) and
 | Jobs | `src/data/experience.yaml` |
 | Freelance page: services, process, FAQ, meeting days/hours, Cal.com link | `src/data/freelance.yaml` |
 | Opening countdown (on/off, every visit, numbers, speed) | `intro:` in `src/data/profile.yaml` |
+| End credits in the footer ("Catering: Chai, mostly") | `credits:` in `src/data/profile.yaml` |
 | Résumé PDF | replace `public/resume.pdf` |
 | A product's text, install steps, shortcuts, poster colours | `src/content/products/<name>.md` |
 | Movies | `src/content/movies/*.md` |

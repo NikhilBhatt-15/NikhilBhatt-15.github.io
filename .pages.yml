@@ -133,6 +133,13 @@ content:
           - { name: value, type: string }
           - { name: label, type: string }
       - { name: resume, label: Résumé PDF, type: file }
+      - name: credits
+        label: End credits (footer)
+        type: object
+        list: true
+        fields:
+          - { name: role, label: 'Role (e.g. Catering)', type: string }
+          - { name: name, label: "Credit (e.g. Chai, mostly)", type: string }
       - name: intro
         label: Opening countdown (home page)
         type: object

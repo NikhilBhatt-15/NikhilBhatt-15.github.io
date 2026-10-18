@@ -42,6 +42,15 @@ stats:
 
 resume: /resume.pdf # replace public/resume.pdf to update the download
 
+# The "end credits" roll in the footer of every page. Add, remove or reorder lines freely.
+credits:
+  - { role: Directed by, name: Nikhil Bhatt }
+  - { role: Written in, name: Rust · C++ · TypeScript · Python · Go }
+  - { role: AI agents, name: Google ADK · LangGraph · LiveKit }
+  - { role: Production design, name: 'Astro, CSS, and too much film grain' }
+  - { role: Shot on location in, name: 'Delhi NCR, India' }
+  - { role: Catering, name: 'Chai, mostly' }
+
 # The 3-2-1 film-leader countdown on the home page.
 intro:
   enabled: true # false = never play it automatically

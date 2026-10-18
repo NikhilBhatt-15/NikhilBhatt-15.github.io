@@ -16,6 +16,7 @@ export interface Profile {
   links: Record<string, string>;
   skills: { group: string; items: string[] }[];
   education: { school: string; degree: string; years: string }[];
+  credits?: { role: string; name: string }[];
   intro?: Partial<{ enabled: boolean; everyVisit: boolean; respectReducedMotion: boolean; count: number; beatMs: number; hint: string }>;
 }
 

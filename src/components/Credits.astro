@@ -3,16 +3,8 @@ import { profile, url } from '../lib/data';
 
 const year = new Date().getFullYear();
 const links = Object.entries(profile.links);
-// The playful part of the end credits. Edit freely.
-const roll: [string, string][] = [
-  ['Directed by', profile.name],
-  ['Written in', 'Rust · C++ · TypeScript · Python · Go'],
-  ['AI agents', 'Google ADK · LangGraph · LangChain'],
-  ['Production design', 'Astro, CSS, and too much film grain'],
-  ['Shot on location in', profile.location],
-  ['Catering', 'Chai, mostly'],
-];
----
+// The end-credits roll comes from `credits:` in src/data/profile.yaml (editable in Pages CMS).
+const roll = profile.credits ?? [];---
 
 <footer class="credits" id="contact" data-reel="∞">
   <div class="wrap">
@@ -29,7 +21,7 @@ const roll: [string, string][] = [
 
     <dl class="roll">
       {
-        roll.map(([k, v]) => (
+        roll.map(({ role: k, name: v }) => (
           <div>
             <dt>{k}</dt>
             <dd>{v}</dd>
