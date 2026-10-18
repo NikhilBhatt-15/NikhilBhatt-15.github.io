@@ -8,6 +8,7 @@ platform: Windows 10/11
 language: Rust
 genre: Utility · Search
 poster: { bg: '#0c1220', ink: '#e8f0ff', accent: '#5ab0ff', motif: lens }
+demo: evbar
 screenshots:
   - { src: /products/evbar-dark.png, alt: evbar dark theme showing search results above the tray }
   - { src: /products/evbar-tips.png, alt: Search tips listed in the empty box }

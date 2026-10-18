@@ -8,6 +8,9 @@ platform: Windows 10/11
 language: C++
 genre: Widget · System
 poster: { bg: '#101a14', ink: '#e6f5ea', accent: '#3ddc84', motif: runner }
+demo: taskmon
+screenshots:
+  - { src: /products/taskmon-widget.webp, alt: 'TaskMon in the taskbar: running fox, network graph, CPU and RAM rings (live capture)' }
 install:
   - 'Download the `TaskMon` zip with the button above and extract it anywhere.'
   - 'Run `TaskMon.exe`. It docks inside the taskbar itself.'

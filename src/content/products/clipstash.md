@@ -8,6 +8,7 @@ platform: Windows 10/11
 language: Rust
 genre: Utility · Productivity
 poster: { bg: '#14110f', ink: '#f3ead8', accent: '#ff7a3d', motif: stack }
+demo: clipstash
 install:
   - 'Download `clipstash.exe` with the button above. It''s a single ~2 MB file with no installer.'
   - 'Run it. clipstash sits in the notification area and starts recording what you copy.'

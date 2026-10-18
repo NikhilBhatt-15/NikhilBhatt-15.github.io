@@ -1,0 +1,411 @@
+---
+import Desktop from './Desktop.astro';
+---
+
+<div class="evb" data-evbar-demo>
+  <Desktop label="evbar demo: search box above the taskbar" height={480}>
+    <div class="drop" hidden>
+      <ul class="rows" role="listbox" aria-label="Results"></ul>
+      <div class="foot"><span class="keys"></span><span class="count"></span></div>
+    </div>
+    <label class="box">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.6"></circle><path d="M12.6 12.6 17 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+      <input type="text" placeholder="Search Everything" aria-label="Search files" autocomplete="off" spellcheck="false" />
+    </label>
+    <div class="nudge" aria-hidden="true">Click here and type ↘</div>
+    <div class="toast" hidden></div>
+    <Fragment slot="help">
+      Try <kbd>report</kbd>, <kbd>ext:pdf;docx invoice</kbd>, <kbd>size:&gt;500mb</kbd>, <kbd>downloads\ zip</kbd> or <kbd>budget | invoice</kbd>. <kbd>↑</kbd><kbd>↓</kbd> move, <kbd>Enter</kbd> opens. The real one searches every file on your PC in milliseconds.
+    </Fragment>
+  </Desktop>
+</div>
+
+<script>
+  type F = { name: string; path: string; size: number; age: number; dir: boolean };
+  const DAY = 864e5;
+  const KB = 1024, MB = KB * 1024, GB = MB * 1024;
+
+  // A small, believable file index. age = days since modified.
+  const U = 'C:\\Users\\you';
+  const raw: [string, string, number, number, boolean?][] = [
+    ['Downloads', U, 0, 0, true], ['Documents', U, 0, 2, true], ['Pictures', U, 0, 5, true], ['Projects', U, 0, 1, true],
+    ['report-q3.pdf', U + '\\Documents\\Work', 2.4 * MB, 3], ['report-q3-final.pdf', U + '\\Documents\\Work', 2.6 * MB, 1],
+    ['report-q3.docx', U + '\\Documents\\Work', 380 * KB, 4], ['annual-report-2025.pdf', U + '\\Documents\\Work', 8.1 * MB, 210],
+    ['invoice-2026-09.pdf', U + '\\Documents\\Invoices', 120 * KB, 28], ['invoice-2026-10.pdf', U + '\\Documents\\Invoices', 118 * KB, 0],
+    ['invoice-template.docx', U + '\\Documents\\Invoices', 64 * KB, 90], ['budget-2026.xlsx', U + '\\Documents\\Finance', 210 * KB, 6],
+    ['budget-trip-goa.xlsx', U + '\\Documents\\Finance', 44 * KB, 40], ['taxes-fy25.pdf', U + '\\Documents\\Finance', 1.2 * MB, 160],
+    ['resume.pdf', U + '\\Documents', 151 * KB, 2], ['cover-letter.docx', U + '\\Documents', 22 * KB, 30],
+    ['Invoices', U + '\\Documents', 0, 0, true], ['Finance', U + '\\Documents', 0, 6, true], ['Work', U + '\\Documents', 0, 1, true],
+    ['photos-goa.zip', U + '\\Downloads', 1.8 * GB, 12], ['setup-vscode-x64.exe', U + '\\Downloads', 98 * MB, 20],
+    ['Everything-1.4.1.1026.x64-Setup.exe', U + '\\Downloads', 1.9 * MB, 45], ['evbar.exe', U + '\\Downloads', 229 * KB, 0],
+    ['clipstash.exe', U + '\\Downloads', 2.1 * MB, 1], ['Nib-v0.1.3.zip', U + '\\Downloads', 1.9 * MB, 1],
+    ['TaskMon-v1.1.0.zip', U + '\\Downloads', 163 * KB, 2], ['dataset-reviews.csv', U + '\\Downloads', 640 * MB, 9],
+    ['ubuntu-24.04-desktop-amd64.iso', U + '\\Downloads', 5.9 * GB, 70], ['lecture-ml-week3.mp4', U + '\\Downloads', 1.1 * GB, 15],
+    ['wallpapers.zip', U + '\\Downloads', 310 * MB, 33], ['statement-sept.pdf', U + '\\Downloads', 96 * KB, 18],
+    ['trip-goa-day1.mp4', U + '\\Videos', 2.3 * GB, 12], ['trip-goa-day2.mp4', U + '\\Videos', 1.7 * GB, 12],
+    ['screen-recording-demo.mp4', U + '\\Videos', 84 * MB, 0], ['IMG_2041.jpg', U + '\\Pictures\\Goa', 4.1 * MB, 12],
+    ['IMG_2042.jpg', U + '\\Pictures\\Goa', 3.9 * MB, 12], ['IMG_2043.jpg', U + '\\Pictures\\Goa', 4.4 * MB, 12],
+    ['IMG_2042_thumb.jpg', U + '\\Pictures\\Goa\\.thumbs', 22 * KB, 12], ['photo-profile.png', U + '\\Pictures', 1.2 * MB, 60],
+    ['Screenshot 2026-10-18 101522.png', U + '\\Pictures\\Screenshots', 310 * KB, 0], ['Screenshot 2026-10-17 223010.png', U + '\\Pictures\\Screenshots', 280 * KB, 1],
+    ['portfolio', U + '\\Projects', 0, 0, true], ['evbar', U + '\\Projects', 0, 2, true], ['clipstash', U + '\\Projects', 0, 1, true],
+    ['nib', U + '\\Projects', 0, 1, true], ['project-ideas.md', U + '\\Projects', 4 * KB, 3], ['main.rs', U + '\\Projects\\evbar\\src', 31 * KB, 2],
+    ['ipc.rs', U + '\\Projects\\evbar\\src', 18 * KB, 2], ['Cargo.toml', U + '\\Projects\\evbar', 1 * KB, 2],
+    ['README.md', U + '\\Projects\\evbar', 9 * KB, 2], ['README.md', U + '\\Projects\\clipstash', 7 * KB, 1],
+    ['store.rs', U + '\\Projects\\clipstash\\src', 14 * KB, 1], ['package.json', U + '\\Projects\\portfolio', 1 * KB, 0],
+    ['index.astro', U + '\\Projects\\portfolio\\src\\pages', 12 * KB, 0], ['agent.py', U + '\\Projects\\voice-agent', 9 * KB, 0],
+    ['prompts.yaml', U + '\\Projects\\voice-agent', 3 * KB, 0], ['notes.txt', U + '\\Desktop', 2 * KB, 0],
+    ['todo.md', U + '\\Desktop', 1 * KB, 0], ['meeting-notes-oct.docx', U + '\\Documents\\Work', 31 * KB, 0],
+    ['calc.exe', 'C:\\Windows\\System32', 27 * KB, 300], ['notepad.exe', 'C:\\Windows\\System32', 360 * KB, 300],
+    ['mspaint.exe', 'C:\\Windows\\System32', 6.2 * MB, 300], ['cmd.exe', 'C:\\Windows\\System32', 323 * KB, 300],
+    ['hosts', 'C:\\Windows\\System32\\drivers\\etc', 1 * KB, 400], ['explorer.exe', 'C:\\Windows', 5.1 * MB, 300],
+    ['Everything.exe', 'C:\\Program Files\\Everything', 2.2 * MB, 45], ['Code.exe', 'C:\\Program Files\\Microsoft VS Code', 160 * MB, 20],
+    ['chrome.exe', 'C:\\Program Files\\Google\\Chrome\\Application', 2.9 * MB, 6], ['pagefile.sys', 'C:\\', 12 * GB, 0],
+    ['hiberfil.sys', 'C:\\', 6.3 * GB, 1], ['music', U, 0, 50, true], ['lofi-mix.mp3', U + '\\music', 92 * MB, 50],
+    ['podcast-ep42.mp3', U + '\\music', 61 * MB, 8], ['budget', U + '\\Documents\\Finance\\old', 0, 400, true],
+  ];
+  const files: F[] = raw.map(([name, path, size, age, dir]) => ({ name, path, size, age, dir: !!dir }));
+
+  const ext = (n: string) => (n.includes('.') ? n.split('.').pop()!.toLowerCase() : '');
+  const sizeOf = (s: string) => {
+    const m = s.match(/^([\d.]+)\s*(b|kb|mb|gb)?$/i);
+    if (!m) return NaN;
+    return Number(m[1]) * ({ b: 1, kb: KB, mb: MB, gb: GB } as Record<string, number>)[(m[2] || 'b').toLowerCase()];
+  };
+  const esc = (s: string) => s.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+
+  type Pred = (f: F) => boolean;
+  /** Parses an Everything-style query into a predicate plus the plain words to highlight. */
+  function compile(q: string): { test: Pred; words: string[] } {
+    const words: string[] = [];
+    const toks = q.match(/"[^"]*"|\S+/g) ?? [];
+    const groups: Pred[][] = [[]]; // OR of ANDs
+    for (let raw of toks) {
+      if (raw === '|') { groups.push([]); continue; }
+      let neg = false;
+      if (raw.startsWith('!') && raw.length > 1) { neg = true; raw = raw.slice(1); }
+      let p: Pred;
+      const [k, v] = raw.includes(':') ? [raw.slice(0, raw.indexOf(':')).toLowerCase(), raw.slice(raw.indexOf(':') + 1)] : ['', raw];
+      if (k === 'ext') {
+        const set = v.toLowerCase().split(';').filter(Boolean);
+        p = (f) => !f.dir && set.includes(ext(f.name));
+      } else if (k === 'dm') {
+        const lim = ({ today: 0, yesterday: 1, thisweek: 6, lastweek: 13, thismonth: 30, thisyear: 365 } as Record<string, number>)[v.toLowerCase()] ?? 0;
+        p = (f) => (v.toLowerCase() === 'yesterday' ? f.age === 1 : f.age <= lim);
+      } else if (k === 'size') {
+        const named: Record<string, Pred> = { huge: (f) => f.size > 128 * MB, large: (f) => f.size > 16 * MB, tiny: (f) => f.size < 10 * KB && !f.dir, empty: (f) => f.size === 0 && !f.dir };
+        if (named[v.toLowerCase()]) p = named[v.toLowerCase()];
+        else {
+          const m = v.match(/^(>=|<=|>|<)?(.+)$/)!;
+          const n = sizeOf(m[2]);
+          const op = m[1] || '=';
+          p = (f) => !f.dir && (op === '>' ? f.size > n : op === '<' ? f.size < n : op === '>=' ? f.size >= n : op === '<=' ? f.size <= n : Math.abs(f.size - n) < n * 0.05);
+        }
+      } else if (k === 'folder' || k === 'file') {
+        const inner = v ? compile(v).test : () => true;
+        p = (f) => (k === 'folder' ? f.dir : !f.dir) && inner(f);
+        if (v) words.push(v.toLowerCase());
+      } else {
+        const t = raw.replace(/^"|"$/g, '').toLowerCase();
+        if (!t) continue;
+        if (t.includes('*') || t.includes('?')) {
+          const re = new RegExp('^' + t.split('').map((c) => (c === '*' ? '.*' : c === '?' ? '.' : esc(c))).join('') + '$', 'i');
+          p = (f) => re.test(f.name);
+        } else if (t.includes('\\')) {
+          p = (f) => (f.path + '\\' + f.name).toLowerCase().includes(t.replace(/\\$/, '').toLowerCase());
+        } else {
+          p = (f) => f.name.toLowerCase().includes(t);
+          if (!neg) words.push(t);
+        }
+      }
+      groups[groups.length - 1].push(neg ? (f) => !p(f) : p);
+    }
+    const live = groups.filter((g) => g.length);
+    return { test: (f) => live.length > 0 && live.some((g) => g.every((pr) => pr(f))), words };
+  }
+
+  const TIPS: [string, string][] = [
+    ['report pdf', 'Words in any order: names containing both "report" and "pdf"'],
+    ['*.mp4', 'Wildcards: * is any text, ? is one character'],
+    ['ext:pdf;docx invoice', 'Only these file types (separate with ;)'],
+    ['dm:today', 'Modified today. Also dm:yesterday, dm:thisweek, dm:thismonth'],
+    ['size:>500mb', 'Bigger than 500 MB. Also size:<10kb, size:huge'],
+    ['downloads\\ zip', 'A term with \\ searches the folder path: zips in any Downloads folder'],
+    ['folder:project', 'Only folders. Use file: for only files'],
+    ['budget | invoice', 'Either word (OR)'],
+    ['photo !thumb', 'Exclude a word (NOT) with !'],
+  ];
+
+  const icon = (f: F) => {
+    if (f.dir) return '<svg viewBox="0 0 20 20"><path d="M2 5.5a1.5 1.5 0 0 1 1.5-1.5h4l2 2h7A1.5 1.5 0 0 1 18 7.5v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 2 14.5z" fill="#f6c344"/><path d="M2 8h16v6.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 2 14.5z" fill="#ffd866"/></svg>';
+    const e = ext(f.name);
+    const col = ({ exe: '#4c9aff', pdf: '#e5534b', zip: '#c8a24a', iso: '#c8a24a', mp4: '#a371f7', mp3: '#3fb950', jpg: '#2ea0a0', png: '#2ea0a0', xlsx: '#3fb950', docx: '#4c8dff', csv: '#3fb950' } as Record<string, string>)[e];
+    if (e === 'exe') return '<svg viewBox="0 0 20 20"><rect x="2.5" y="3.5" width="15" height="13" rx="1.5" fill="#dfe8f7"/><rect x="2.5" y="3.5" width="15" height="3" fill="#4c9aff"/><rect x="5" y="9" width="5" height="5" fill="#4c9aff"/></svg>';
+    return `<svg viewBox="0 0 20 20"><path d="M5 2.5h7l4 4V17a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 5 17z" fill="#e8e8e8"/><path d="M12 2.5V6.5h4" fill="#bdbdbd"/>${col ? `<rect x="5" y="11" width="11" height="4.5" rx="1" fill="${col}"/>` : ''}</svg>`;
+  };
+  const h = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const mark = (name: string, words: string[]) => {
+    if (!words.length) return h(name);
+    const re = new RegExp('(' + words.map(esc).join('|') + ')', 'gi');
+    return name.split(re).map((part, i) => (i % 2 ? `<b>${h(part)}</b>` : h(part))).join('');
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-evbar-demo]').forEach((root) => {
+    const input = root.querySelector('input')!;
+    const drop = root.querySelector<HTMLElement>('.drop')!;
+    const rows = root.querySelector('.rows')!;
+    const keys = root.querySelector('.keys')!;
+    const count = root.querySelector('.count')!;
+    const toast = root.querySelector<HTMLElement>('.toast')!;
+    const nudge = root.querySelector<HTMLElement>('.nudge')!;
+    let sel = 0;
+    let shown: (F | [string, string])[] = [];
+    let toastT = 0;
+
+    const say = (msg: string) => {
+      toast.textContent = msg;
+      toast.hidden = false;
+      clearTimeout(toastT);
+      toastT = window.setTimeout(() => (toast.hidden = true), 1800);
+    };
+    const render = () => {
+      const q = input.value.trim();
+      drop.hidden = false;
+      if (!q) {
+        shown = TIPS;
+        rows.innerHTML = TIPS.map(
+          ([t, d], i) => `<li role="option" class="row tip${i === sel ? ' on' : ''}" data-i="${i}"><span class="ic"><svg viewBox="0 0 20 20"><path d="M10 3a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM8 16h4" fill="none" stroke="#7cc4ff" stroke-width="1.4" stroke-linecap="round"/></svg></span><span class="tx"><span class="nm"><strong>${h(t)}</strong></span><span class="pt">${h(d)}</span></span></li>`,
+        ).join('');
+        keys.textContent = 'Search tips: Enter or click one to try it   Esc close';
+        count.textContent = '';
+        return;
+      }
+      const { test, words } = compile(q);
+      const hits = files.filter(test).sort((a, b) => Number(b.dir) - Number(a.dir) || a.name.localeCompare(b.name));
+      shown = hits.slice(0, 100);
+      sel = Math.min(sel, Math.max(0, shown.length - 1));
+      rows.innerHTML = shown.length
+        ? (shown as F[]).map(
+            (f, i) => `<li role="option" class="row${i === sel ? ' on' : ''}" data-i="${i}"><span class="ic">${icon(f)}</span><span class="tx"><span class="nm">${mark(f.name, words)}</span><span class="pt">${h(f.path)}</span></span></li>`,
+          ).join('')
+        : `<li class="none">No results. Try one of the tips: clear the box.</li>`;
+      keys.textContent = 'Enter open   Ctrl+Enter show in folder   Esc close';
+      count.textContent = `${hits.length} result${hits.length === 1 ? '' : 's'}`;
+      rows.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
+    };
+    const activate = (i: number, inFolder = false) => {
+      const item = shown[i];
+      if (!item) return;
+      if (Array.isArray(item)) {
+        input.value = item[0];
+        sel = 0;
+        render();
+        return;
+      }
+      say(inFolder ? `Showing ${item.name} in Explorer` : `Opening ${item.dir ? 'folder ' : ''}${item.name}…`);
+    };
+
+    input.addEventListener('focus', () => {
+      nudge.hidden = true;
+      render();
+    });
+    input.addEventListener('input', () => {
+      sel = 0;
+      render();
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        sel = Math.max(0, Math.min(shown.length - 1, sel + (e.key === 'ArrowDown' ? 1 : -1)));
+        render();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        activate(sel, e.ctrlKey);
+      } else if (e.key === 'Escape') {
+        if (input.value) input.value = '';
+        else {
+          drop.hidden = true;
+          input.blur();
+          return;
+        }
+        render();
+      }
+    });
+    rows.addEventListener('mousedown', (e) => e.preventDefault());
+    rows.addEventListener('click', (e) => {
+      const li = (e.target as HTMLElement).closest<HTMLElement>('[data-i]');
+      if (li) activate(Number(li.dataset.i));
+      input.focus();
+    });
+    root.addEventListener('focusout', (e) => {
+      if (!root.contains(e.relatedTarget as Node)) setTimeout(() => !root.contains(document.activeElement) && (drop.hidden = true), 120);
+    });
+  });
+</script>
+
+<style>
+  .evb :global(.screen) {
+    font-size: 14px;
+  }
+  .box {
+    position: absolute;
+    right: 14px;
+    bottom: 54px;
+    width: min(300px, calc(100% - 28px));
+    height: 42px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    background: #2b2b2b;
+    border: 1px solid #3c3c3c;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+    color: #cfcfcf;
+    z-index: 3;
+    cursor: text;
+  }
+  .box:focus-within {
+    border-color: #4c4c4c;
+  }
+  .box svg {
+    width: 17px;
+    height: 17px;
+    flex: none;
+  }
+  .box input {
+    all: unset;
+    flex: 1;
+    min-width: 0;
+    color: #fff;
+    font: inherit;
+    font-size: 15px;
+  }
+  .box input::placeholder {
+    color: #8a8a8a;
+  }
+  .nudge {
+    position: absolute;
+    right: 40px;
+    bottom: 104px;
+    font: 500 12px var(--mono);
+    color: var(--accent);
+    animation: bob 1.6s ease-in-out infinite;
+    z-index: 2;
+  }
+  @keyframes bob {
+    50% { transform: translate(4px, 4px); }
+  }
+  .drop {
+    position: absolute;
+    right: 14px;
+    bottom: 104px;
+    width: min(560px, calc(100% - 28px));
+    max-height: 330px;
+    display: flex;
+    flex-direction: column;
+    background: #252525;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    box-shadow: 0 16px 40px rgb(0 0 0 / 0.55);
+    z-index: 4;
+    overflow: hidden;
+  }
+  .drop[hidden] {
+    display: none;
+  }
+  .rows {
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+    overflow-y: auto;
+    flex: 1;
+    scrollbar-width: thin;
+    scrollbar-color: #555 transparent;
+  }
+  .rows :global(.row) {
+    position: relative;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: default;
+  }
+  .rows :global(.row:hover) {
+    background: #2e2e2e;
+  }
+  .rows :global(.row.on) {
+    background: #353535;
+  }
+  .rows :global(.row.on)::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 30%;
+    bottom: 30%;
+    width: 3px;
+    border-radius: 2px;
+    background: #60cdff;
+  }
+  .rows :global(.ic) {
+    width: 20px;
+    height: 20px;
+    flex: none;
+  }
+  .rows :global(.ic svg) {
+    width: 20px;
+    height: 20px;
+  }
+  .rows :global(.tx) {
+    display: grid;
+    min-width: 0;
+  }
+  .rows :global(.nm) {
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rows :global(.nm b) {
+    color: #60cdff;
+    font-weight: 600;
+  }
+  .rows :global(.pt) {
+    font-size: 12px;
+    color: #a0a0a0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rows :global(.none) {
+    padding: 18px;
+    color: #a0a0a0;
+  }
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 16px;
+    border-top: 1px solid #333;
+    font-size: 12px;
+    color: #a0a0a0;
+    white-space: pre;
+  }
+  .keys {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .toast {
+    position: absolute;
+    left: 50%;
+    top: 22px;
+    transform: translateX(-50%);
+    background: #2b2b2b;
+    border: 1px solid #444;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    z-index: 6;
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.5);
+  }
+</style>

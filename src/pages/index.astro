@@ -3,10 +3,12 @@ import Base from '../layouts/Base.astro';
 import ProductCard from '../components/ProductCard.astro';
 import MoviePoster from '../components/MoviePoster.astro';
 import Stars from '../components/Stars.astro';
+import Demo from '../components/demos/Demo.astro';
 import { profile, freelance, url, fmtDate, inlineMd } from '../lib/data';
 import { getProducts, getProjects, getNotes, getMovies, getExperience, getPick } from '../lib/content';
 
 const products = await getProducts();
+const withDemos = products.filter((p) => p.data.demo);
 const experience = await getExperience();
 const projects = (await getProjects()).filter((p) => p.data.featured).slice(0, 3);
 const notes = (await getNotes()).slice(0, 4);
@@ -86,6 +88,37 @@ const marquee = products.map((p) => p.data.name.toUpperCase());
     <div class="grid products">
       {products.map((p) => <ProductCard product={p} />)}
     </div>
+
+    {
+      withDemos.length > 0 && (
+        <div class="room" id="screening-room">
+          <div class="room-head">
+            <p class="label">
+              <span class="live">▶</span> Screening room
+            </p>
+            <h3>
+              Try them <em>right here.</em>
+            </h3>
+            <p class="dim">Working replicas of the real apps, running in your browser. Pick one.</p>
+          </div>
+          <div class="room-tabs" role="tablist" aria-label="Product demos">
+            {withDemos.map((p, i) => (
+              <button type="button" role="tab" id={`tab-${p.id}`} aria-selected={i === 0 ? 'true' : 'false'} aria-controls={`demo-${p.id}`}>
+                {p.data.name}
+              </button>
+            ))}
+          </div>
+          {withDemos.map((p, i) => (
+            <div class="room-panel" id={`demo-${p.id}`} role="tabpanel" aria-labelledby={`tab-${p.id}`} hidden={i !== 0}>
+              <Demo name={p.data.demo!} />
+              <a class="room-more mono" href={url(`/products/${p.id}/`)}>
+                Download {p.data.name} and read how it works →
+              </a>
+            </div>
+          ))}
+        </div>
+      )
+    }
   </section>
 
   <!-- ── Freelance band ─────────────────────────────────── -->
@@ -264,7 +297,89 @@ const marquee = products.map((p) => p.data.name.toUpperCase());
   }
 </Base>
 
+<script>
+  document.querySelectorAll<HTMLElement>('.room').forEach((room) => {
+    const tabs = [...room.querySelectorAll<HTMLButtonElement>('.room-tabs [role=tab]')];
+    const show = (b: HTMLButtonElement) =>
+      tabs.forEach((x) => {
+        const on = x === b;
+        x.setAttribute('aria-selected', String(on));
+        room.querySelector<HTMLElement>('#' + x.getAttribute('aria-controls'))!.hidden = !on;
+      });
+    tabs.forEach((b, i) => {
+      b.addEventListener('click', () => show(b));
+      b.addEventListener('keydown', (e) => {
+        const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (!d) return;
+        const n = tabs[(i + d + tabs.length) % tabs.length];
+        n.focus();
+        show(n);
+      });
+    });
+  });
+</script>
+
 <style>
+  /* ── Screening room ─────────────────────────────────── */
+  .room {
+    margin-top: clamp(72px, 10vw, 120px);
+  }
+  .room-head h3 {
+    font-size: clamp(32px, 4.6vw, 60px);
+    line-height: 1;
+    letter-spacing: -0.045em;
+    margin: 8px 0 6px;
+  }
+  .room-head h3 em {
+    font-family: var(--serif);
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .room-head .dim {
+    margin: 0 0 22px;
+  }
+  .room .live {
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    font-size: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    color: #fff;
+    box-shadow: 0 0 14px var(--red);
+    margin-right: 6px;
+  }
+  .room-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  .room-tabs button {
+    font: 600 14px var(--display);
+    color: var(--dim);
+    background: none;
+    border: 1px solid var(--line-2);
+    border-radius: 999px;
+    padding: 9px 16px;
+    cursor: pointer;
+  }
+  .room-tabs button[aria-selected='true'] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--bg);
+  }
+  .room-panel[hidden] {
+    display: none;
+  }
+  .room-more {
+    display: inline-block;
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--accent);
+    text-decoration: none;
+  }
   .pick-bg.blur {
     filter: blur(48px) saturate(1.3);
     transform: scale(1.2);

@@ -1,0 +1,164 @@
+---
+// A small Windows 11-style desktop that hosts an interactive product demo.
+// Slots: default (the stage), "taskbar-left" (things docked in the taskbar), "help" (caption under it).
+interface Props {
+  height?: number;
+  label: string;
+}
+const { height = 460, label } = Astro.props;
+---
+
+<figure class="desk" aria-label={label}>
+  <div class="screen" style={`--h:${height}px`}>
+    <slot />
+    <div class="taskbar">
+      <div class="tb-left"><slot name="taskbar-left" /></div>
+      <div class="tb-mid" aria-hidden="true">
+        <span class="win"><i></i><i></i><i></i><i></i></span>
+        <span class="ico search"></span>
+        <span class="ico ex"></span>
+        <span class="ico br"></span>
+        <span class="ico ed"></span>
+      </div>
+      <div class="tb-right" aria-hidden="true">
+        <span class="tray">⌃</span>
+        <span class="clock"><b data-clock>11:42</b><small data-date>18-10-2026</small></span>
+      </div>
+    </div>
+  </div>
+  <figcaption><slot name="help" /></figcaption>
+</figure>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.desk').forEach((d) => {
+    const c = d.querySelector('[data-clock]');
+    const dt = d.querySelector('[data-date]');
+    const tick = () => {
+      const n = new Date();
+      if (c) c.textContent = n.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      if (dt) dt.textContent = n.toLocaleDateString('en-GB').replace(/\//g, '-');
+    };
+    tick();
+    setInterval(tick, 30_000);
+  });
+</script>
+
+<style>
+  .desk {
+    margin: 0;
+  }
+  .screen {
+    position: relative;
+    height: var(--h);
+    border-radius: 14px;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 80% 70% at 75% 15%, #1f3b5c 0%, transparent 60%),
+      radial-gradient(ellipse 70% 60% at 10% 90%, #2a1f45 0%, transparent 60%),
+      #0f1622;
+    box-shadow: 0 0 0 1px var(--line-2), 0 40px 80px -40px rgb(0 0 0 / 0.9);
+    font-family: 'Segoe UI Variable', 'Segoe UI', var(--display), sans-serif;
+    color: #fff;
+    isolation: isolate;
+  }
+  .taskbar {
+    position: absolute;
+    inset: auto 0 0;
+    height: 44px;
+    background: rgb(28 28 28 / 0.94);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgb(255 255 255 / 0.06);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    z-index: 5;
+  }
+  .tb-left {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding-left: 6px;
+  }
+  .tb-mid {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .win {
+    display: grid;
+    grid-template-columns: 9px 9px;
+    gap: 2px;
+    padding: 8px;
+    border-radius: 6px;
+  }
+  .win i {
+    width: 9px;
+    height: 9px;
+    background: #4cc2ff;
+    border-radius: 1px;
+  }
+  .ico {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    margin: 0 3px;
+  }
+  .search {
+    background: radial-gradient(circle at 45% 45%, transparent 5px, #ddd 5.5px, #ddd 7px, transparent 7.5px);
+  }
+  .ex {
+    background: linear-gradient(#f6c344 0 0) 3px 7px / 20px 14px no-repeat, linear-gradient(#e0a826 0 0) 3px 4px / 9px 4px no-repeat;
+  }
+  .br {
+    background: conic-gradient(#0f9d58 0 120deg, #db4437 0 240deg, #f4b400 0) padding-box;
+    border-radius: 50%;
+    transform: scale(0.8);
+  }
+  .ed {
+    background: linear-gradient(135deg, #5b8def, #3a5fd0);
+    transform: scale(0.8);
+  }
+  .tb-right {
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-right: 12px;
+    font-size: 12px;
+  }
+  .tray {
+    opacity: 0.7;
+  }
+  .clock {
+    display: grid;
+    text-align: right;
+    line-height: 1.25;
+  }
+  .clock b {
+    font-weight: 400;
+  }
+  .clock small {
+    font-size: 11px;
+  }
+  figcaption {
+    margin-top: 12px;
+    font-size: 13.5px;
+    color: var(--dim);
+  }
+  figcaption :global(kbd) {
+    font: 500 11.5px var(--mono);
+    background: var(--bg-3);
+    border: 1px solid var(--line-2);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 1px 6px;
+  }
+  @media (max-width: 560px) {
+    .tb-mid {
+      display: none;
+    }
+    .taskbar {
+      grid-template-columns: 1fr auto;
+    }
+  }
+</style>

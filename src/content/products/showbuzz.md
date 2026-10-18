@@ -8,6 +8,7 @@ platform: Docker
 language: Go · React
 genre: Full stack · Distributed systems
 poster: { bg: '#1a0b10', ink: '#ffe9ee', accent: '#ff3d5a', motif: seats }
+demo: showbuzz
 install:
   - 'Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine with Compose v2).'
   - "Clone and start it:\n```bash\ngit clone https://github.com/NikhilBhatt-15/showbuzz.git\ncd showbuzz\ndocker compose up -d --build\n```"

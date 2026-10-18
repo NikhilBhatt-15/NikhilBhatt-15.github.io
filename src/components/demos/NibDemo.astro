@@ -1,0 +1,377 @@
+---
+// Nib in the browser: tabs, autosave to a session, crash recovery and Markdown preview.
+---
+
+<div class="nbd" data-nib-demo>
+  <div class="win">
+    <div class="menu"><span>File</span><span>Edit</span><span>Find</span><span>View</span><span>Tools</span><span>Help</span></div>
+    <div class="tabs" role="tablist"></div>
+    <div class="body">
+      <div class="ed">
+        <pre class="gut" aria-hidden="true"></pre>
+        <textarea spellcheck="false" aria-label="Editor"></textarea>
+      </div>
+      <div class="pv" hidden></div>
+    </div>
+    <div class="status">
+      <span class="saved">Session saved</span>
+      <span class="pos"></span>
+    </div>
+    <div class="recover" hidden></div>
+  </div>
+  <div class="ctl">
+    <button type="button" data-a="preview">Markdown preview <kbd>Ctrl+Shift+M</kbd></button>
+    <button type="button" data-a="new">New tab <kbd>Ctrl+N</kbd></button>
+    <button type="button" data-a="crash" class="danger">💥 Kill Nib (simulate a crash)</button>
+  </div>
+  <p class="help">
+    Type anything, then hit <b>Kill Nib</b> or even reload this page. Every tab comes back exactly as you left it. That's
+    the real app's promise: unsaved work is written to the session about a second after you stop typing.
+  </p>
+</div>
+
+<script>
+  type Tab = { id: number; name: string; text: string };
+  const KEY = 'nib-demo-session';
+  const START: Tab[] = [
+    { id: 1, name: 'ideas.md', text: '# Ideas\n\nType here. Nothing you write is ever lost.\n\n## This week\n- [x] Ship clipstash v0.3\n- [ ] Try **Nib** in the browser\n- [ ] Kill it and watch it recover\n\n> Unsaved tabs survive crashes, restarts and Task Manager.\n\n`Ctrl+Shift+M` toggles this preview.' },
+    { id: 2, name: 'Untitled', text: '' },
+  ];
+  const h = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const inline = (s: string) =>
+    h(s)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a>$1</a>');
+  const md = (src: string) => {
+    let out = '', list = false, code = false;
+    for (const line of src.split('\n')) {
+      if (line.startsWith('```')) { out += code ? '</pre>' : '<pre>'; code = !code; continue; }
+      if (code) { out += h(line) + '\n'; continue; }
+      const li = line.match(/^\s*[-*] (\[( |x)\] )?(.*)$/);
+      if (li && !list) { out += '<ul>'; list = true; }
+      if (!li && list) { out += '</ul>'; list = false; }
+      if (li) out += `<li>${li[1] ? (li[2] === 'x' ? '☑ ' : '☐ ') : ''}${inline(li[3])}</li>`;
+      else if (/^#{1,3} /.test(line)) { const n = line.match(/^#+/)![0].length; out += `<h${n}>${inline(line.slice(n + 1))}</h${n}>`; }
+      else if (line.startsWith('> ')) out += `<blockquote>${inline(line.slice(2))}</blockquote>`;
+      else if (line.trim()) out += `<p>${inline(line)}</p>`;
+    }
+    return out + (list ? '</ul>' : '') + (code ? '</pre>' : '');
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-nib-demo]').forEach((root) => {
+    const tabsEl = root.querySelector('.tabs')!;
+    const ta = root.querySelector('textarea')!;
+    const gut = root.querySelector('.gut')!;
+    const pv = root.querySelector<HTMLElement>('.pv')!;
+    const saved = root.querySelector('.saved')!;
+    const pos = root.querySelector('.pos')!;
+    const rec = root.querySelector<HTMLElement>('.recover')!;
+    const win = root.querySelector<HTMLElement>('.win')!;
+
+    let tabs: Tab[] = START;
+    let active = 1;
+    let recovered = false;
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (s?.tabs?.length) { tabs = s.tabs; active = s.active; recovered = true; }
+    } catch {}
+    let preview = false;
+    let saveT = 0;
+
+    const cur = () => tabs.find((t) => t.id === active) ?? tabs[0];
+    const persist = () => {
+      try { localStorage.setItem(KEY, JSON.stringify({ tabs, active })); } catch {}
+      saved.textContent = 'Session saved ✓';
+    };
+    const renderTabs = () => {
+      tabsEl.innerHTML =
+        tabs.map((t) => `<button role="tab" type="button" class="tab${t.id === active ? ' on' : ''}" data-id="${t.id}">${h(t.name)}${t.text && t.name === 'Untitled' ? ' •' : ''}</button>`).join('') +
+        '<button type="button" class="plus" aria-label="New tab">+</button>';
+    };
+    const renderGutter = () => {
+      gut.textContent = Array.from({ length: ta.value.split('\n').length }, (_, i) => i + 1).join('\n');
+      gut.scrollTop = ta.scrollTop;
+    };
+    const renderPos = () => {
+      const before = ta.value.slice(0, ta.selectionStart).split('\n');
+      const words = ta.value.trim() ? ta.value.trim().split(/\s+/).length : 0;
+      pos.textContent = `Ln ${before.length}, Col ${before[before.length - 1].length + 1}   ${words} words   UTF-8   ${cur().name.endsWith('.md') ? 'Markdown' : 'Plain text'}`;
+    };
+    const load = () => {
+      ta.value = cur().text;
+      renderTabs();
+      renderGutter();
+      renderPos();
+      pv.innerHTML = md(ta.value);
+    };
+    const togglePreview = () => {
+      preview = !preview;
+      pv.hidden = !preview;
+      win.classList.toggle('split', preview);
+      pv.innerHTML = md(ta.value);
+    };
+
+    ta.addEventListener('input', () => {
+      cur().text = ta.value;
+      saved.textContent = 'Editing…';
+      clearTimeout(saveT);
+      saveT = window.setTimeout(persist, 900);
+      renderGutter();
+      renderPos();
+      if (preview) pv.innerHTML = md(ta.value);
+      if (cur().name === 'Untitled') renderTabs();
+    });
+    ta.addEventListener('scroll', () => (gut.scrollTop = ta.scrollTop));
+    ta.addEventListener('keyup', renderPos);
+    ta.addEventListener('click', renderPos);
+    root.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'm') { e.preventDefault(); togglePreview(); }
+    });
+    const newTab = () => {
+      const id = Math.max(...tabs.map((t) => t.id)) + 1;
+      tabs.push({ id, name: 'Untitled', text: '' });
+      active = id;
+      load();
+      persist();
+      ta.focus();
+    };
+    tabsEl.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('button');
+      if (!b) return;
+      if (b.classList.contains('plus')) return newTab();
+      active = Number(b.dataset.id);
+      load();
+      persist();
+    });
+    root.querySelector('.ctl')!.addEventListener('click', (e) => {
+      const a = (e.target as HTMLElement).closest<HTMLElement>('[data-a]')?.dataset.a;
+      if (a === 'preview') togglePreview();
+      if (a === 'new') newTab();
+      if (a === 'crash') {
+        persist();
+        win.classList.add('dead');
+        ta.value = '';
+        tabsEl.innerHTML = '';
+        gut.textContent = '';
+        pv.innerHTML = '';
+        setTimeout(() => {
+          win.classList.remove('dead');
+          try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) { tabs = s.tabs; active = s.active; } } catch {}
+          load();
+          showRecovered();
+        }, 1300);
+      }
+    });
+    const showRecovered = () => {
+      const n = tabs.filter((t) => t.text).length;
+      rec.textContent = `Nib closed unexpectedly. Recovered ${n} tab${n === 1 ? '' : 's'} with all your unsaved text.`;
+      rec.hidden = false;
+      setTimeout(() => (rec.hidden = true), 3200);
+    };
+    load();
+    if (recovered && tabs.some((t) => t.text !== START.find((s) => s.id === t.id)?.text)) showRecovered();
+  });
+</script>
+
+<style>
+  .win {
+    position: relative;
+    height: 380px;
+    display: flex;
+    flex-direction: column;
+    background: #1e1e1e;
+    color: #e6e6e6;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px var(--line-2), 0 40px 80px -40px rgb(0 0 0 / 0.9);
+    font-family: 'Segoe UI Variable', 'Segoe UI', var(--display), sans-serif;
+    transition: filter 0.3s, opacity 0.3s;
+  }
+  .win.dead {
+    filter: grayscale(1) brightness(0.4);
+    opacity: 0.6;
+  }
+  .win.dead::after {
+    content: 'Nib is not responding…';
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 15px;
+    color: #fff;
+  }
+  .menu {
+    display: flex;
+    gap: 16px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    background: #1b1b1b;
+  }
+  .tabs {
+    display: flex;
+    background: #1b1b1b;
+    border-bottom: 1px solid #2c2c2c;
+    min-height: 34px;
+    overflow-x: auto;
+  }
+  .tabs :global(button) {
+    all: unset;
+    padding: 7px 16px;
+    font-size: 13px;
+    color: #a8a8a8;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tabs :global(.tab.on) {
+    color: #fff;
+    background: #1e1e1e;
+    box-shadow: inset 0 2px 0 #c586c0;
+    font-weight: 600;
+  }
+  .tabs :global(.plus) {
+    color: #888;
+  }
+  .body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+  .win.split .body {
+    grid-template-columns: 1fr 1fr;
+  }
+  .ed {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    min-height: 0;
+  }
+  .gut,
+  textarea {
+    margin: 0;
+    padding: 10px 8px;
+    font: 400 13.5px/1.6 'Cascadia Mono', Consolas, var(--mono);
+    border: 0;
+  }
+  .gut {
+    background: none !important;
+    color: #6e6e6e;
+    text-align: right;
+    overflow: hidden;
+    border-radius: 0;
+  }
+  textarea {
+    resize: none;
+    background: transparent;
+    color: #e6e6e6;
+    outline: none;
+    white-space: pre;
+    overflow: auto;
+    caret-color: #fff;
+  }
+  .pv {
+    border-left: 1px solid #2c2c2c;
+    padding: 6px 18px;
+    overflow: auto;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .pv[hidden] {
+    display: none;
+  }
+  .pv :global(h1),
+  .pv :global(h2),
+  .pv :global(h3) {
+    color: #4fa3e0;
+    margin: 10px 0 4px;
+    letter-spacing: 0;
+  }
+  .pv :global(h1) {
+    font-size: 24px;
+  }
+  .pv :global(h2) {
+    font-size: 19px;
+  }
+  .pv :global(ul) {
+    padding-left: 18px;
+    margin: 4px 0;
+  }
+  .pv :global(blockquote) {
+    margin: 8px 0;
+    padding-left: 12px;
+    border-left: 3px solid #555;
+    color: #aaa;
+    font-style: italic;
+  }
+  .pv :global(code) {
+    background: #2d2d2d;
+    border: 0;
+  }
+  .pv :global(p) {
+    margin: 6px 0;
+  }
+  .status {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 12px;
+    font-size: 11.5px;
+    color: #a8a8a8;
+    background: #1b1b1b;
+    border-top: 1px solid #2c2c2c;
+    white-space: pre;
+  }
+  .recover {
+    position: absolute;
+    left: 50%;
+    top: 74px;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 90%;
+    background: #2b2b2b;
+    border: 1px solid #c586c0;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13px;
+    box-shadow: 0 12px 30px rgb(0 0 0 / 0.5);
+  }
+  .ctl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .ctl button {
+    font: 600 13px var(--display);
+    color: var(--ink);
+    background: var(--bg-3);
+    border: 1px solid var(--line-2);
+    border-radius: 999px;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+  .ctl button:hover {
+    border-color: var(--accent);
+  }
+  .ctl .danger {
+    border-color: rgb(255 77 61 / 0.5);
+  }
+  .ctl kbd {
+    font: 500 10.5px var(--mono);
+    color: var(--dim);
+    margin-left: 4px;
+  }
+  .help {
+    margin-top: 10px;
+    font-size: 13.5px;
+    color: var(--dim);
+  }
+  @media (max-width: 640px) {
+    .win.split .body {
+      grid-template-columns: 1fr;
+    }
+    .win.split .ed {
+      display: none;
+    }
+  }
+</style>

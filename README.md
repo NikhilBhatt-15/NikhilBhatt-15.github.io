@@ -12,6 +12,9 @@ install guides), my work history, early projects, notes, and a movie diary.
 - **Now showing.** Every product gets a generated movie poster (SVG, no image files) and a
   page with a "ticket" download, SHA-256 with a copy button, install steps, usage and a
   keyboard-shortcut table.
+- **Try it live.** evbar, clipstash, TaskMon, showbuzz and Nib each have an in-browser
+  replica of the real UI with scripted behaviour (like zestdrop.org's hero), shown on the product
+  page and in the home page's tabbed "Screening room". Code: `src/components/demos/`.
 - **Always current.** Version, file size, release date, download link and SHA-256 are
   read from each product's latest GitHub release at build time. The site rebuilds daily,
   so shipping a release updates the site automatically.
@@ -66,6 +69,7 @@ runtimes, get a free [TMDB API key](https://www.themoviedb.org/settings/api) and
 | End credits in the footer ("Catering: Chai, mostly") | `credits:` in `src/data/profile.yaml` |
 | Résumé PDF | replace `public/resume.pdf` |
 | A product's text, install steps, shortcuts, poster colours | `src/content/products/<name>.md` |
+| A product's screenshots / live demo | `screenshots:` and `demo:` in that product's file (images go in `public/products/`) |
 | Movies | `src/content/movies/*.md` |
 | Blog posts | `src/content/notes/*.md` |
 | Early works | `src/content/projects/*.md` (screenshots go in `public/projects/`) |

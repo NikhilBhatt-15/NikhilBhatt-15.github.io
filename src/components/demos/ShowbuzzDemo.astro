@@ -1,0 +1,526 @@
+---
+// Seat map + Redis seat-lock simulation for showbuzz.
+---
+
+<div class="sbz" data-showbuzz-demo>
+  <div class="browser">
+    <div class="chrome">
+      <span class="dots"><i></i><i></i><i></i></span>
+      <span class="url">localhost:8080/buytickets/<b>the-last-reel</b>/seats</span>
+    </div>
+    <div class="app">
+      <div class="map">
+        <div class="show">
+          <strong>The Last Reel</strong>
+          <span>Galaxy Cinemas: Screen 3 · Sat, 8:15 PM</span>
+        </div>
+        <div class="grid" role="grid" aria-label="Seat map"></div>
+        <div class="screen-arc"><span>All eyes this way please</span></div>
+        <div class="legend">
+          <span><i class="s a"></i>Available</span>
+          <span><i class="s p"></i>Selected</span>
+          <span><i class="s y"></i>Held by you</span>
+          <span><i class="s r"></i>Held by someone</span>
+          <span><i class="s x"></i>Sold</span>
+        </div>
+      </div>
+      <aside class="side">
+        <div class="summary">
+          <span class="k">Your seats</span>
+          <span class="seats">Pick up to 6</span>
+          <span class="total"></span>
+        </div>
+        <div class="timer" hidden>Seats held for <b>10:00</b></div>
+        <button class="go" type="button" disabled>Lock seats</button>
+        <button class="ff" type="button" hidden>⏩ Skip to hold expiry</button>
+        <label class="rival"><input type="checkbox" checked /> Rival buyer active</label>
+        <div class="ticket" hidden></div>
+      </aside>
+    </div>
+    <div class="log" aria-live="polite"><div class="lh">Backend · trans service</div><ol></ol></div>
+  </div>
+  <p class="help">
+    Pick seats and hit <b>Lock seats</b>. Your hold is an atomic Redis Lua lock with a 10-minute TTL. The rival buyer keeps
+    trying to grab seats, including yours, and gets <code>409</code> every time. Pay to commit the booking in Postgres.
+  </p>
+</div>
+
+<script>
+  type State = 'a' | 'p' | 'y' | 'r' | 'x';
+  const ROWS: [string, number, string, number][] = [
+    ['A', 10, 'RECLINER', 450], ['B', 10, 'RECLINER', 450],
+    ['C', 14, 'PRIME', 250], ['D', 14, 'PRIME', 250], ['E', 14, 'PRIME', 250], ['F', 14, 'PRIME', 250], ['G', 14, 'PRIME', 250],
+    ['H', 14, 'CLASSIC', 180], ['I', 14, 'CLASSIC', 180],
+  ];
+  const HOLD = 600;
+
+  document.querySelectorAll<HTMLElement>('[data-showbuzz-demo]').forEach((root) => {
+    const grid = root.querySelector<HTMLElement>('.grid')!;
+    const logEl = root.querySelector('.log ol')!;
+    const seatsEl = root.querySelector('.seats')!;
+    const totalEl = root.querySelector('.total')!;
+    const go = root.querySelector<HTMLButtonElement>('.go')!;
+    const ff = root.querySelector<HTMLButtonElement>('.ff')!;
+    const timer = root.querySelector<HTMLElement>('.timer')!;
+    const ticket = root.querySelector<HTMLElement>('.ticket')!;
+    const rivalOn = root.querySelector<HTMLInputElement>('.rival input')!;
+
+    const seats = new Map<string, { st: State; price: number; until?: number; txn?: string }>();
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    let html = '';
+    let lastCat = '';
+    for (const [r, n, cat, price] of ROWS) {
+      if (cat !== lastCat) {
+        html += `<div class="cat">${cat} · ₹${price}</div>`;
+        lastCat = cat;
+      }
+      html += `<div class="row"><span class="rl">${r}</span>`;
+      for (let i = 1; i <= n; i++) {
+        const id = `${r}${i}`;
+        const sold = rnd() < 0.22;
+        seats.set(id, { st: sold ? 'x' : 'a', price });
+        if (n === 14 && i === 8) html += '<span class="gap"></span>';
+        if (n === 10 && i === 6) html += '<span class="gap"></span>';
+        html += `<button type="button" class="s ${sold ? 'x' : 'a'}" data-id="${id}" aria-label="Seat ${id}">${i}</button>`;
+      }
+      html += '</div>';
+    }
+    grid.innerHTML = html;
+
+    let myTxn = '';
+    let myUntil = 0;
+    const txnId = () => 'txn_' + Math.random().toString(16).slice(2, 6);
+    const ts = () => new Date().toLocaleTimeString([], { hour12: false });
+    const log = (msg: string, kind = '') => {
+      const li = document.createElement('li');
+      li.className = kind;
+      li.innerHTML = `<time>${ts()}</time> ${msg}`;
+      logEl.prepend(li);
+      while (logEl.children.length > 40) logEl.lastChild!.remove();
+    };
+    const paint = () => {
+      seats.forEach((s, id) => {
+        const b = grid.querySelector<HTMLElement>(`[data-id="${id}"]`)!;
+        b.className = `s ${s.st}`;
+      });
+      const mine = [...seats].filter(([, s]) => s.st === 'p' || s.st === 'y');
+      seatsEl.textContent = mine.length ? mine.map(([id]) => id).join(', ') : 'Pick up to 6';
+      const sum = mine.reduce((t, [, s]) => t + s.price, 0);
+      totalEl.textContent = mine.length ? `₹${sum} + ₹${Math.round(sum * 0.12)} fees` : '';
+      const picked = mine.some(([, s]) => s.st === 'p');
+      go.disabled = !myTxn && !picked;
+      go.textContent = myTxn ? `Pay ₹${Math.round(sum * 1.12)}` : 'Lock seats';
+    };
+    log('GET /api/shows/8812/seats → 200 · layout + sold seats + live locks', 'ok');
+
+    grid.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-id]');
+      if (!b || myTxn) return;
+      const s = seats.get(b.dataset.id!)!;
+      const mine = [...seats.values()].filter((x) => x.st === 'p').length;
+      if (s.st === 'a' && mine < 6) s.st = 'p';
+      else if (s.st === 'p') s.st = 'a';
+      else if (s.st === 'r') log(`${b.dataset.id} is held by another buyer right now`, 'warn');
+      paint();
+    });
+
+    const lock = (ids: string[], txn: string, who: 'you' | 'rival'): boolean => {
+      const body = `{seats:[${ids.join(',')}]}`;
+      const clash = ids.filter((id) => {
+        const s = seats.get(id)!;
+        return s.st === 'x' || ((s.st === 'y' || s.st === 'r') && s.txn !== txn);
+      });
+      if (clash.length) {
+        log(`${who === 'you' ? 'you' : '<em>rival</em>'} → POST /transactions ${body} → <b>409 SEAT_LOCKED</b> ${clash.join(',')} · Lua script aborted, nothing written`, 'bad');
+        return false;
+      }
+      const until = Date.now() + (who === 'you' ? HOLD : 8 + rnd() * 6) * 1000;
+      ids.forEach((id) => Object.assign(seats.get(id)!, { st: who === 'you' ? 'y' : 'r', txn, until }));
+      log(`${who === 'you' ? 'you' : '<em>rival</em>'} → POST /transactions ${body} → <b>201</b> · EVAL lock.lua: ZADD locks:8812 ${ids.length} seats (TTL ${who === 'you' ? HOLD : 'short'}s) · ${txn}`, 'ok');
+      return true;
+    };
+
+    go.addEventListener('click', () => {
+      if (!myTxn) {
+        const ids = [...seats].filter(([, s]) => s.st === 'p').map(([id]) => id);
+        const txn = txnId();
+        ids.forEach((id) => seats.get(id)!.st === 'p' && (seats.get(id)!.st = 'a'));
+        if (lock(ids, txn, 'you')) {
+          myTxn = txn;
+          myUntil = Date.now() + HOLD * 1000;
+          timer.hidden = false;
+          ff.hidden = false;
+        } else ids.forEach((id) => seats.get(id)!.st === 'a' && (seats.get(id)!.st = 'p'));
+        paint();
+        return;
+      }
+      const mine = [...seats].filter(([, s]) => s.txn === myTxn);
+      log(`you → POST /transactions/${myTxn}/pay → re-check ${mine.length} locks ✓ · gateway ✓`, 'ok');
+      log(`BEGIN; INSERT bookings; INSERT booking_seats (PK show_id, seat_id); COMMIT → <b>200</b> · ZREM locks · publish booking.confirmed`, 'ok');
+      mine.forEach(([, s]) => Object.assign(s, { st: 'x', txn: undefined }));
+      const code = 'SBZ' + Math.random().toString(36).slice(2, 8).toUpperCase();
+      ticket.innerHTML = `<div class="tk"><span class="k">E-ticket · ${code}</span><strong>The Last Reel</strong><span>Sat, 8:15 PM · Screen 3</span><span class="st">${mine.map(([id]) => id).join(', ')}</span><span class="qr">${Array.from({ length: 49 }, () => `<i${Math.random() > 0.5 ? ' class="on"' : ''}></i>`).join('')}</span></div>`;
+      ticket.hidden = false;
+      myTxn = '';
+      timer.hidden = true;
+      ff.hidden = true;
+      paint();
+    });
+    ff.addEventListener('click', () => (myUntil = Date.now()));
+
+    // Clock: expire locks, run the rival.
+    let nextRival = Date.now() + 2500;
+    setInterval(() => {
+      const now = Date.now();
+      seats.forEach((s, id) => {
+        if ((s.st === 'r' || s.st === 'y') && s.until && now > (s.st === 'y' ? myUntil : s.until)) {
+          if (s.st === 'r' && rnd() < 0.5) {
+            s.st = 'x';
+            log(`<em>rival</em> paid → ${id} sold`, '');
+          } else {
+            if (s.st === 'y' && myTxn) {
+              log(`hold ${myTxn} expired → locks swept on next request (lazy expiry). Seats are free again.`, 'warn');
+              myTxn = '';
+              timer.hidden = true;
+              ff.hidden = true;
+            }
+            s.st = 'a';
+          }
+          s.txn = undefined;
+        }
+      });
+      if (myTxn) {
+        const left = Math.max(0, Math.round((myUntil - now) / 1000));
+        timer.querySelector('b')!.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+      }
+      if (rivalOn.checked && now > nextRival) {
+        nextRival = now + 2600 + rnd() * 2200;
+        const mine = [...seats].filter(([, s]) => s.st === 'y').map(([id]) => id);
+        const free = [...seats].filter(([, s]) => s.st === 'a').map(([id]) => id);
+        let ids: string[];
+        if (mine.length && rnd() < 0.55) ids = [mine[Math.floor(rnd() * mine.length)], ...(free.length ? [free[0]] : [])];
+        else {
+          const start = free[Math.floor(rnd() * free.length)];
+          if (!start) return;
+          const row = start[0];
+          ids = free.filter((id) => id[0] === row).slice(0, 1 + Math.floor(rnd() * 3));
+        }
+        lock(ids, txnId(), 'rival');
+      }
+      paint();
+    }, 500);
+    paint();
+  });
+</script>
+
+<style>
+  .sbz {
+    --pink: #ff3d5a;
+  }
+  .browser {
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fff;
+    color: #222;
+    box-shadow: 0 0 0 1px var(--line-2), 0 40px 80px -40px rgb(0 0 0 / 0.9);
+    font-family: Roboto, 'Segoe UI', var(--display), sans-serif;
+  }
+  .chrome {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 9px 14px;
+    background: #e9e9ec;
+    border-bottom: 1px solid #d6d6db;
+  }
+  .dots {
+    display: flex;
+    gap: 6px;
+  }
+  .dots i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #c9c9cf;
+  }
+  .url {
+    flex: 1;
+    font-size: 12px;
+    color: #555;
+    background: #fff;
+    border-radius: 999px;
+    padding: 5px 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .app {
+    display: grid;
+    grid-template-columns: 1fr 230px;
+  }
+  .map {
+    padding: 14px 16px 12px;
+    overflow-x: auto;
+    min-width: 0;
+  }
+  .show {
+    display: grid;
+    margin-bottom: 8px;
+  }
+  .show strong {
+    font-size: 16px;
+  }
+  .show span {
+    font-size: 12px;
+    color: #666;
+  }
+  .grid :global(.cat) {
+    font-size: 10.5px;
+    color: #777;
+    letter-spacing: 0.06em;
+    margin: 8px 0 4px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 2px;
+  }
+  .grid :global(.row) {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    margin: 3px 0;
+    justify-content: center;
+  }
+  .grid :global(.rl) {
+    width: 14px;
+    font-size: 11px;
+    color: #888;
+  }
+  .grid :global(.gap) {
+    width: 12px;
+  }
+  .sbz :global(.s) {
+    width: 22px;
+    height: 20px;
+    padding: 0;
+    font: 500 9.5px Roboto, var(--display);
+    border-radius: 4px 4px 3px 3px;
+    border: 1px solid #1ea83c;
+    background: #fff;
+    color: #1ea83c;
+    cursor: pointer;
+    flex: none;
+    display: inline-block;
+  }
+  .sbz :global(.s.p) {
+    background: #1ea83c;
+    color: #fff;
+  }
+  .sbz :global(.s.y) {
+    background: #ffb547;
+    border-color: #e39a1f;
+    color: #3b2500;
+    animation: held 1.6s ease-in-out infinite;
+  }
+  .sbz :global(.s.r) {
+    background: repeating-linear-gradient(45deg, #f3d6db 0 3px, #fff 3px 6px);
+    border-color: var(--pink);
+    color: var(--pink);
+    cursor: not-allowed;
+  }
+  .sbz :global(.s.x) {
+    background: #e2e2e2;
+    border-color: #e2e2e2;
+    color: transparent;
+    cursor: not-allowed;
+  }
+  @keyframes held {
+    50% { box-shadow: 0 0 0 3px rgb(255 181 71 / 0.35); }
+  }
+  .screen-arc {
+    margin: 16px auto 22px;
+    width: 70%;
+    height: 14px;
+    border-top: 3px solid #b9c7ff;
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    text-align: center;
+  }
+  .screen-arc span {
+    font-size: 10px;
+    color: #888;
+    position: relative;
+    top: 4px;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 14px;
+    font-size: 11px;
+    color: #555;
+    margin-top: 8px;
+  }
+  .legend span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .legend :global(.s) {
+    width: 13px;
+    height: 12px;
+    cursor: default;
+    animation: none;
+  }
+  .side {
+    border-left: 1px solid #eee;
+    padding: 16px;
+    display: grid;
+    gap: 10px;
+    align-content: start;
+    background: #fafafa;
+  }
+  .summary {
+    display: grid;
+    gap: 2px;
+  }
+  .k {
+    font-size: 11px;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .seats {
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .total {
+    font-size: 12px;
+    color: #555;
+  }
+  .timer {
+    font-size: 12.5px;
+    background: #fff4e0;
+    border: 1px solid #ffd9a0;
+    border-radius: 6px;
+    padding: 7px 9px;
+    color: #6b4200;
+  }
+  .timer[hidden],
+  .ticket[hidden],
+  .ff[hidden] {
+    display: none;
+  }
+  .go {
+    font: 700 14px Roboto, var(--display);
+    color: #fff;
+    background: var(--pink);
+    border: 0;
+    border-radius: 8px;
+    padding: 11px;
+    cursor: pointer;
+  }
+  .go:disabled {
+    background: #d8d8d8;
+    cursor: default;
+  }
+  .ff {
+    font-size: 11.5px;
+    background: none;
+    border: 1px dashed #bbb;
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+    color: #555;
+  }
+  .rival {
+    font-size: 12px;
+    color: #555;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .ticket :global(.tk) {
+    display: grid;
+    gap: 2px;
+    border: 1px dashed #ccc;
+    border-radius: 10px;
+    padding: 10px;
+    background: #fff;
+    font-size: 12px;
+  }
+  .ticket :global(.st) {
+    font-weight: 700;
+    color: var(--pink);
+  }
+  .ticket :global(.qr) {
+    display: grid;
+    grid-template-columns: repeat(7, 8px);
+    gap: 1px;
+    margin-top: 6px;
+  }
+  .ticket :global(.qr i) {
+    width: 8px;
+    height: 8px;
+    background: #eee;
+  }
+  .ticket :global(.qr i.on) {
+    background: #222;
+  }
+  .log {
+    background: #0f1115;
+    color: #c9d1d9;
+    font: 11.5px/1.55 var(--mono);
+    max-height: 150px;
+    overflow: auto;
+    border-top: 1px solid #222;
+  }
+  .lh {
+    position: sticky;
+    top: 0;
+    background: #161a20;
+    padding: 6px 12px;
+    color: #8b949e;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .log ol {
+    list-style: none;
+    margin: 0;
+    padding: 6px 12px 10px;
+  }
+  .log :global(li) {
+    padding: 2px 0;
+    word-break: break-word;
+  }
+  .log :global(time) {
+    color: #6e7681;
+    margin-right: 6px;
+  }
+  .log :global(li.ok b) {
+    color: #3fb950;
+  }
+  .log :global(li.bad b) {
+    color: #ff7b72;
+  }
+  .log :global(li.warn) {
+    color: #e3b341;
+  }
+  .log :global(em) {
+    color: #d2a8ff;
+    font-style: normal;
+  }
+  .help {
+    margin-top: 12px;
+    font-size: 13.5px;
+    color: var(--dim);
+  }
+  @media (max-width: 760px) {
+    .app {
+      grid-template-columns: 1fr;
+    }
+    .side {
+      border-left: 0;
+      border-top: 1px solid #eee;
+    }
+  }
+</style>

@@ -1,0 +1,656 @@
+---
+import Desktop from './Desktop.astro';
+---
+
+<div class="cls" data-clipstash-demo>
+  <Desktop label="clipstash demo: clipboard history popup" height={500}>
+    <div class="win editor">
+      <div class="bar"><span class="dot"></span>notes.txt</div>
+      <div class="doc" contenteditable="true" spellcheck="false" aria-label="Editor. Paste clips here.">
+        <p>Meeting notes, Saturday</p><p>Paste things below this line ↓</p><p><br /></p>
+      </div>
+    </div>
+
+    <aside class="win shelf" aria-label="Things to copy">
+      <div class="bar">Copy something</div>
+      <div class="cards"></div>
+      <button class="open" type="button"><kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd> Open clipstash</button>
+    </aside>
+
+    <div class="pop" hidden role="dialog" aria-label="clipstash">
+      <div class="search">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.6"></circle><path d="M12.6 12.6 17 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+        <input placeholder="Search clipboard history" aria-label="Search clipboard history" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="body">
+        <ul class="list" role="listbox"></ul>
+        <div class="preview"></div>
+      </div>
+      <div class="pfoot"></div>
+    </div>
+    <div class="flash" hidden></div>
+
+    <Fragment slot="help">
+      Click <b>Copy</b> on a card (or select any text here and press <kbd>Ctrl</kbd>+<kbd>C</kbd>), click into the note, then press <kbd>Alt</kbd>+<kbd>V</kbd> (the real shortcut is <kbd>Win</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd>). Type to filter, <kbd>Enter</kbd> pastes, <kbd>Shift</kbd>+<kbd>Enter</kbd> pastes trimmed, <kbd>Ctrl</kbd>+<kbd>P</kbd> pins.
+    </Fragment>
+  </Desktop>
+</div>
+
+<script>
+  type Kind = 'Code' | 'Link' | 'Path' | 'Colour' | 'Text' | 'Image';
+  type Clip = { id: number; text: string; kind: Kind; at: number; pinned: boolean; w?: number; h?: number };
+
+  const SHOT =
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 108"><rect width="192" height="108" fill="#16202e"/><rect x="0" y="98" width="192" height="10" fill="#1c1c1c"/><rect x="18" y="14" width="96" height="66" rx="4" fill="#252525" stroke="#3a3a3a"/><rect x="26" y="24" width="60" height="5" rx="2" fill="#60cdff"/><rect x="26" y="34" width="78" height="4" rx="2" fill="#555"/><rect x="26" y="42" width="70" height="4" rx="2" fill="#555"/><rect x="26" y="50" width="52" height="4" rx="2" fill="#555"/><rect x="122" y="24" width="54" height="40" rx="4" fill="#ffb547" opacity=".9"/><circle cx="140" cy="40" r="7" fill="#fff8" /></svg>',
+    );
+
+  const classify = (t: string): Kind => {
+    const s = t.trim();
+    if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(s) || /^rgb\(/i.test(s)) return 'Colour';
+    if (/^https?:\/\/\S+$/i.test(s)) return 'Link';
+    if (/^([a-z]:\\|\\\\|~\/|\/[\w.-]+\/)\S*$/i.test(s)) return 'Path';
+    const lines = s.split('\n');
+    const sym = (s.match(/[{}();=<>\[\]]/g) || []).length / Math.max(1, s.length);
+    if (lines.length > 1 && (lines.some((l) => /^\s{2,}\S/.test(l)) || sym > 0.04)) return 'Code';
+    if (/\b(const|let|fn|def|return|import|function|class)\b/.test(s) && sym > 0.03) return 'Code';
+    return 'Text';
+  };
+  const dedent = (t: string) => {
+    const lines = t.replace(/\r/g, '').split('\n').map((l) => l.replace(/\s+$/, ''));
+    while (lines.length && !lines[0].trim()) lines.shift();
+    while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+    const ind = Math.min(...lines.filter((l) => l.trim()).map((l) => l.match(/^\s*/)![0].length));
+    return lines.map((l) => l.slice(ind)).join('\n');
+  };
+  const ago = (ms: number) => {
+    const s = Math.round((Date.now() - ms) / 1000);
+    return s < 45 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`;
+  };
+  const h = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const meta = (c: Clip) => {
+    if (c.kind === 'Image') return `Image · ${c.w}×${c.h} · ${ago(c.at)}`;
+    if (c.kind === 'Link') return `Link · ${new URL(c.text.trim()).host} · ${ago(c.at)}`;
+    if (c.kind === 'Colour') return `Colour · ${ago(c.at)}`;
+    const n = c.text.split('\n').length;
+    return `${c.kind} · ${n > 1 ? `${n} lines` : `${c.text.length} chars`} · ${ago(c.at)}`;
+  };
+  const ICON: Record<Kind, string> = { Code: '</>', Link: '🔗', Path: '📁', Colour: '', Text: '¶', Image: '' };
+
+  const CARDS: { label: string; text: string; image?: boolean }[] = [
+    { label: 'A line of code', text: 'const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);' },
+    { label: 'Indented Python (try Shift+Enter)', text: '        def greet(name):\n            return f"Hello, {name}!"\n\n        print(greet("clipstash"))' },
+    { label: 'A link', text: 'https://github.com/NikhilBhatt-15/clipstash' },
+    { label: 'A colour', text: '#ffb547' },
+    { label: 'A screenshot (Win+Shift+S)', text: '', image: true },
+  ];
+
+  document.querySelectorAll<HTMLElement>('[data-clipstash-demo]').forEach((root) => {
+    const stage = root.querySelector<HTMLElement>('.screen')!;
+    const doc = root.querySelector<HTMLElement>('.doc')!;
+    const pop = root.querySelector<HTMLElement>('.pop')!;
+    const input = pop.querySelector('input')!;
+    const list = pop.querySelector('.list')!;
+    const preview = pop.querySelector<HTMLElement>('.preview')!;
+    const pfoot = pop.querySelector('.pfoot')!;
+    const flash = root.querySelector<HTMLElement>('.flash')!;
+    let id = 0;
+    const now = Date.now();
+    let clips: Clip[] = [
+      { id: id++, text: 'Thanks,\nNikhil', kind: 'Text', at: now - 86400e3, pinned: true },
+      { id: id++, text: 'Moved the client call to Saturday 4 pm.', kind: 'Text', at: now - 3 * 3600e3, pinned: false },
+      { id: id++, text: 'C:\\Users\\you\\Projects\\portfolio\\src', kind: 'Path', at: now - 50 * 60e3, pinned: false },
+      { id: id++, text: 'SELECT name, email FROM users\nWHERE created_at > now() - interval \'7 days\'\nORDER BY created_at DESC;', kind: 'Code', at: now - 25 * 60e3, pinned: false },
+      { id: id++, text: '', kind: 'Image', at: now - 12 * 60e3, pinned: false, w: 1920, h: 1080 },
+      { id: id++, text: '#60cdff', kind: 'Colour', at: now - 6 * 60e3, pinned: false },
+    ];
+    let view: Clip[] = [];
+    let sel = 0;
+    let saved: Range | null = null;
+
+    const add = (text: string, image = false) => {
+      if (!image && !text.trim()) return;
+      clips = clips.filter((c) => (image ? c.kind !== 'Image' : c.text !== text));
+      clips.push(image ? { id: id++, text: '', kind: 'Image', at: Date.now(), pinned: false, w: 1920, h: 1080 } : { id: id++, text, kind: classify(text), at: Date.now(), pinned: false });
+      ping(image ? 'Screenshot saved to clipstash' : 'Copied. clipstash saved it');
+    };
+    let pingT = 0;
+    const ping = (msg: string) => {
+      flash.textContent = msg;
+      flash.hidden = false;
+      clearTimeout(pingT);
+      pingT = window.setTimeout(() => (flash.hidden = true), 1400);
+    };
+
+    // Copy cards
+    const cards = root.querySelector('.cards')!;
+    cards.innerHTML = CARDS.map(
+      (c, i) =>
+        `<div class="card"><span class="cl">${h(c.label)}</span>${c.image ? `<img src="${SHOT}" alt="" />` : `<code>${h(c.text.trim().split('\n')[0])}</code>`}<button type="button" data-copy="${i}">Copy</button></div>`,
+    ).join('');
+    cards.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-copy]');
+      if (!b) return;
+      const c = CARDS[Number(b.dataset.copy)];
+      add(c.text, !!c.image);
+      if (!c.image) navigator.clipboard?.writeText(c.text).catch(() => {});
+      b.textContent = 'Copied ✓';
+      setTimeout(() => (b.textContent = 'Copy'), 1100);
+    });
+    // Real Ctrl+C inside the demo is recorded too.
+    root.addEventListener('copy', () => {
+      const t = getSelection()?.toString() ?? '';
+      if (t && !pop.contains(document.activeElement)) add(t);
+    });
+
+    const order = () => [...clips].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.at - a.at);
+    const render = () => {
+      const words = input.value.toLowerCase().split(/\s+/).filter(Boolean);
+      view = order().filter((c) => words.every((w) => (c.kind === 'Image' ? `image screenshot ${c.w}x${c.h}` : `${c.text} ${c.kind}`).toLowerCase().includes(w)));
+      sel = Math.min(sel, Math.max(0, view.length - 1));
+      const re = words.length ? new RegExp(`(${words.map(esc).join('|')})`, 'gi') : null;
+      list.innerHTML = view.length
+        ? view
+            .map((c, i) => {
+              // Show the first line that contains a search word, like the real popup does.
+              const lines = c.text.trim().split('\n');
+              const first = c.kind === 'Image' ? 'Screenshot' : (lines.find((l) => words.some((w) => l.toLowerCase().includes(w))) ?? lines[0]);
+              const title = re ? h(first.trim()).replace(re, '<mark>$1</mark>') : h(first.trim());
+              const ic =
+                c.kind === 'Colour'
+                  ? `<span class="sw" style="background:${h(c.text.trim())}"></span>`
+                  : c.kind === 'Image'
+                    ? `<img class="th" src="${SHOT}" alt="" />`
+                    : `<span class="gl">${ICON[c.kind]}</span>`;
+              return `<li role="option" class="item${i === sel ? ' on' : ''}" data-i="${i}">${ic}<span class="t"><span class="ti${c.kind === 'Code' || c.kind === 'Path' ? ' cs-code' : ''}">${title}</span><span class="me">${h(meta(c))}</span></span><span class="n">${c.pinned ? '📌' : i < 9 ? i + 1 : ''}</span></li>`;
+            })
+            .join('')
+        : '<li class="empty">No matches</li>';
+      list.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
+      const c = view[sel];
+      if (!c) preview.innerHTML = '';
+      else if (c.kind === 'Image') preview.innerHTML = `<div class="ph">Image · ${c.w}×${c.h}</div><img src="${SHOT}" alt="Screenshot preview" />`;
+      else if (c.kind === 'Colour') preview.innerHTML = `<div class="ph">Colour</div><div class="big" style="background:${h(c.text.trim())}"></div><pre>${h(c.text.trim())}</pre>`;
+      else
+        preview.innerHTML = `<div class="ph">${c.kind} · ${c.text.length} chars</div><pre class="${c.kind === 'Code' ? 'code' : ''}">${c.text
+          .split('\n')
+          .map((l, n) => (c.kind === 'Code' ? `<i>${n + 1}</i>` : '') + h(l))
+          .join('\n')}</pre>`;
+      pfoot.innerHTML = `<span class="hints"><kbd>Enter</kbd> Paste <kbd>Shift+Enter</kbd> Paste trimmed <kbd>Ctrl+P</kbd> Pin <kbd>Shift+Del</kbd> Delete</span><span>${words.length ? `${view.length} of ${clips.length}` : `${clips.length} items`}</span>`;
+    };
+
+    const caretRect = () => {
+      const s = getSelection();
+      if (s && s.rangeCount && doc.contains(s.anchorNode)) {
+        saved = s.getRangeAt(0).cloneRange();
+        const r = saved.getClientRects()[0] ?? (s.anchorNode as HTMLElement).getBoundingClientRect?.();
+        if (r && r.height) return r;
+      }
+      const last = doc.lastElementChild as HTMLElement;
+      saved = document.createRange();
+      saved.selectNodeContents(last);
+      saved.collapse(false);
+      return last.getBoundingClientRect();
+    };
+    const open = () => {
+      const r = caretRect();
+      const st = stage.getBoundingClientRect();
+      pop.hidden = false;
+      const pw = pop.offsetWidth, ph = pop.offsetHeight;
+      let x = r.left - st.left, y = r.bottom - st.top + 6;
+      if (y + ph > st.height - 50) y = r.top - st.top - ph - 8;
+      pop.style.left = `${Math.max(8, Math.min(x, st.width - pw - 8))}px`;
+      pop.style.top = `${Math.max(8, y)}px`;
+      input.value = '';
+      // Pinned clips sit on top; start on the newest clip so Enter pastes what you just copied.
+      const newest = order().reduce((a, b) => (b.at > a.at ? b : a));
+      sel = order().indexOf(newest);
+      render();
+      input.focus();
+    };
+    const close = () => {
+      pop.hidden = true;
+      doc.focus();
+      if (saved) {
+        const s = getSelection()!;
+        s.removeAllRanges();
+        s.addRange(saved);
+      }
+    };
+    const paste = (c: Clip, trimmed = false) => {
+      close();
+      const s = getSelection()!;
+      const range = s.rangeCount ? s.getRangeAt(0) : saved!;
+      range.deleteContents();
+      let node: Node;
+      if (c.kind === 'Image') {
+        const img = document.createElement('img');
+        img.src = SHOT;
+        img.alt = 'Pasted screenshot';
+        img.className = 'pasted';
+        node = img;
+      } else {
+        const text = trimmed ? dedent(c.text) : c.text;
+        const span = document.createElement('span');
+        span.className = 'pasted' + (c.kind === 'Code' ? ' cs-code' : '');
+        span.style.whiteSpace = 'pre-wrap';
+        span.textContent = text;
+        node = span;
+      }
+      range.insertNode(node);
+      range.setStartAfter(node);
+      range.collapse(true);
+      s.removeAllRanges();
+      s.addRange(range);
+      c.at = Date.now();
+      setTimeout(() => (node as HTMLElement).classList?.remove('pasted'), 900);
+    };
+
+    root.querySelector('.open')!.addEventListener('mousedown', (e) => e.preventDefault());
+    root.querySelector('.open')!.addEventListener('click', open);
+    root.addEventListener('keydown', (e) => {
+      if (e.altKey && (e.key === 'v' || e.key === 'V') && pop.hidden) {
+        e.preventDefault();
+        open();
+      }
+    });
+    input.addEventListener('input', () => {
+      sel = 0;
+      render();
+    });
+    input.addEventListener('keydown', (e) => {
+      const c = view[sel];
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        sel = Math.max(0, Math.min(view.length - 1, sel + (e.key === 'ArrowDown' ? 1 : -1)));
+        render();
+      } else if (e.key === 'Enter' && c) {
+        e.preventDefault();
+        paste(c, e.shiftKey);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+      } else if (e.ctrlKey && /^[1-9]$/.test(e.key) && view[Number(e.key) - 1]) {
+        e.preventDefault();
+        paste(view[Number(e.key) - 1]);
+      } else if (e.ctrlKey && e.key.toLowerCase() === 'p' && c) {
+        e.preventDefault();
+        c.pinned = !c.pinned;
+        render();
+      } else if (e.shiftKey && e.key === 'Delete' && c) {
+        e.preventDefault();
+        clips = clips.filter((x) => x !== c);
+        render();
+      }
+    });
+    list.addEventListener('mousedown', (e) => e.preventDefault());
+    list.addEventListener('click', (e) => {
+      const li = (e.target as HTMLElement).closest<HTMLElement>('[data-i]');
+      if (li) paste(view[Number(li.dataset.i)]);
+    });
+    list.addEventListener('mousemove', (e) => {
+      const li = (e.target as HTMLElement).closest<HTMLElement>('[data-i]');
+      if (li && Number(li.dataset.i) !== sel) {
+        sel = Number(li.dataset.i);
+        render();
+      }
+    });
+    input.addEventListener('blur', () => setTimeout(() => !pop.contains(document.activeElement) && !pop.hidden && (pop.hidden = true), 150));
+  });
+</script>
+
+<style>
+  .cls :global(.screen) {
+    font-size: 13.5px;
+    color: #fff;
+  }
+  .win {
+    position: absolute;
+    background: #202020;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    box-shadow: 0 18px 40px rgb(0 0 0 / 0.5);
+    overflow: hidden;
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 12px;
+    font-size: 12px;
+    color: #cfcfcf;
+    background: #1a1a1a;
+    border-bottom: 1px solid #2d2d2d;
+  }
+  .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    background: #4cc2ff;
+  }
+  .editor {
+    left: 16px;
+    top: 16px;
+    right: calc(36% + 8px);
+    bottom: 60px;
+  }
+  .doc {
+    height: calc(100% - 32px);
+    overflow: auto;
+    padding: 14px 16px;
+    outline: none;
+    line-height: 1.55;
+    color: #eaeaea;
+    caret-color: #60cdff;
+    cursor: text;
+  }
+  .doc :global(p) {
+    margin: 0 0 4px;
+  }
+  .doc :global(.cs-code),
+  .pop :global(.cs-code) {
+    font-family: 'Cascadia Mono', Consolas, var(--mono);
+    font-size: 12.5px;
+  }
+  .doc :global(img) {
+    max-width: 220px;
+    border-radius: 6px;
+    vertical-align: top;
+    margin: 4px 0;
+  }
+  .doc :global(.pasted) {
+    background: rgb(96 205 255 / 0.22);
+    border-radius: 3px;
+    transition: background 0.9s;
+  }
+  .shelf {
+    top: 16px;
+    right: 16px;
+    width: 36%;
+    bottom: 60px;
+    display: flex;
+    flex-direction: column;
+  }
+  .cards {
+    flex: 1;
+    overflow: auto;
+    padding: 10px;
+    display: grid;
+    gap: 8px;
+    align-content: start;
+  }
+  .cards :global(.card) {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 8px;
+    align-items: center;
+    background: #2a2a2a;
+    border: 1px solid #353535;
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .cards :global(.cl) {
+    grid-column: 1;
+    font-size: 11px;
+    color: #a8a8a8;
+  }
+  .cards :global(code),
+  .cards :global(img) {
+    grid-column: 1;
+    grid-row: 2;
+    font: 12px 'Cascadia Mono', Consolas, var(--mono);
+    background: none;
+    border: 0;
+    padding: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #eaeaea;
+  }
+  .cards :global(img) {
+    width: 96px;
+    border-radius: 4px;
+  }
+  .cards :global(button) {
+    grid-row: 1 / 3;
+    grid-column: 2;
+    font: 600 12px var(--display);
+    color: #0b0a09;
+    background: #60cdff;
+    border: 0;
+    border-radius: 6px;
+    padding: 7px 10px;
+    cursor: pointer;
+  }
+  .open {
+    margin: 0 10px 10px;
+    padding: 10px;
+    font: 600 12.5px var(--display);
+    color: #fff;
+    background: #2d2d2d;
+    border: 1px solid #444;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .open:hover {
+    border-color: #60cdff;
+  }
+  .open kbd,
+  .pfoot :global(kbd) {
+    font: 500 11px var(--mono);
+    background: #2d2d2d;
+    border: 1px solid #4a4a4a;
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: #fff;
+  }
+  .pop {
+    position: absolute;
+    width: min(600px, calc(100% - 16px));
+    height: 320px;
+    display: flex;
+    flex-direction: column;
+    background: #202020;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    box-shadow: 0 24px 60px rgb(0 0 0 / 0.6);
+    z-index: 6;
+    overflow: hidden;
+  }
+  .pop[hidden] {
+    display: none;
+  }
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px;
+    padding: 0 12px;
+    height: 36px;
+    background: #1a1a1a;
+    border: 1px solid #3a3a3a;
+    border-bottom: 2px solid #60cdff;
+    border-radius: 7px;
+    color: #a8a8a8;
+  }
+  .search svg {
+    width: 15px;
+    height: 15px;
+  }
+  .search input {
+    all: unset;
+    flex: 1;
+    color: #fff;
+    font: inherit;
+  }
+  .search input::placeholder {
+    color: #8a8a8a;
+  }
+  .body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 0;
+    border-top: 1px solid #2d2d2d;
+  }
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #555 transparent;
+  }
+  .list :global(.item) {
+    display: grid;
+    grid-template-columns: 26px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: default;
+  }
+  .list :global(.item.on) {
+    background: #2d2d2d;
+    box-shadow: inset 3px 0 0 #60cdff;
+  }
+  .list :global(.gl) {
+    text-align: center;
+    color: #a8a8a8;
+    font: 12px var(--mono);
+  }
+  .list :global(.item.on .gl) {
+    color: #60cdff;
+  }
+  .list :global(.sw) {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    margin: auto;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2);
+  }
+  .list :global(.th) {
+    width: 26px;
+    height: 16px;
+    border-radius: 3px;
+    object-fit: cover;
+  }
+  .list :global(.t) {
+    display: grid;
+    min-width: 0;
+  }
+  .list :global(.ti) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .list :global(mark) {
+    background: rgb(96 205 255 / 0.35);
+    color: #fff;
+    border-radius: 2px;
+  }
+  .list :global(.me) {
+    font-size: 11px;
+    color: #a8a8a8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .list :global(.n) {
+    font-size: 11px;
+    color: #a8a8a8;
+  }
+  .list :global(.empty) {
+    padding: 16px;
+    color: #a8a8a8;
+  }
+  .preview {
+    background: #1a1a1a;
+    border-left: 1px solid #2d2d2d;
+    padding: 10px 12px;
+    overflow: auto;
+    min-width: 0;
+  }
+  .preview :global(.ph) {
+    font-size: 11px;
+    color: #a8a8a8;
+    margin-bottom: 8px;
+  }
+  .preview :global(pre.code) {
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .preview :global(pre) {
+    margin: 0;
+    padding: 0;
+    background: none !important;
+    border: 0;
+    font: 12px/1.55 'Cascadia Mono', Consolas, var(--mono);
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #eaeaea;
+  }
+  .preview :global(pre i) {
+    display: inline-block;
+    width: 20px;
+    margin-right: 8px;
+    text-align: right;
+    font-style: normal;
+    color: #666;
+  }
+  .preview :global(img) {
+    width: 100%;
+    border-radius: 6px;
+  }
+  .preview :global(.big) {
+    height: 90px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  .pfoot {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 12px;
+    border-top: 1px solid #2d2d2d;
+    font-size: 11px;
+    color: #a8a8a8;
+    white-space: nowrap;
+  }
+  .pfoot :global(.hints) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .flash {
+    position: absolute;
+    left: 50%;
+    bottom: 58px;
+    transform: translateX(-50%);
+    background: #2b2b2b;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    z-index: 7;
+  }
+  @media (max-width: 700px) {
+    .editor {
+      right: 16px;
+      bottom: calc(46% + 8px);
+    }
+    .shelf {
+      width: auto;
+      left: 16px;
+      top: calc(54% - 8px);
+    }
+    .body {
+      grid-template-columns: 1fr;
+    }
+    .preview {
+      display: none;
+    }
+  }
+</style>

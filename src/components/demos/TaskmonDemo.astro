@@ -1,0 +1,311 @@
+---
+import Desktop from './Desktop.astro';
+import { url } from '../../lib/data';
+---
+
+<div class="tmd" data-taskmon-demo data-sprite={url('/products/taskmon-fox-sprite.png')}>
+  <Desktop label="TaskMon demo: widget docked in the taskbar" height={420}>
+    <div class="panel">
+      <div class="bar">TaskMon · right-click menu</div>
+      <div class="grp">
+        <span class="lbl">Style</span>
+        <div class="seg" data-k="style">
+          <button type="button" data-v="subtle">Subtle</button>
+          <button type="button" data-v="cards">Cards</button>
+          <button type="button" data-v="rings" class="on">Rings</button>
+          <button type="button" data-v="classic">Classic</button>
+        </div>
+      </div>
+      <div class="grp">
+        <span class="lbl">Fox runs faster with</span>
+        <div class="seg" data-k="drive">
+          <button type="button" data-v="cpu" class="on">CPU</button>
+          <button type="button" data-v="ram">RAM</button>
+          <button type="button" data-v="net">Network</button>
+        </div>
+      </div>
+      <div class="grp">
+        <span class="lbl">Make the PC busy</span>
+        <label class="slider">CPU load <input type="range" min="2" max="100" value="12" data-load /><output>12%</output></label>
+        <div class="acts">
+          <button type="button" data-act="download">⤓ Start a 2 GB download</button>
+          <button type="button" data-act="tabs">Open 30 browser tabs</button>
+        </div>
+      </div>
+    </div>
+    <canvas slot="taskbar-left" class="widget" aria-label="TaskMon widget showing network speed, CPU and RAM"></canvas>
+    <Fragment slot="help">
+      The widget lives <em>inside</em> the taskbar (bottom left). Push the CPU slider to 100% and the fox sprints and the ring pulses red. Start a download and watch the network graph climb.
+    </Fragment>
+  </Desktop>
+</div>
+
+<script>
+  type Style = 'subtle' | 'cards' | 'rings' | 'classic';
+  const W = 300, H = 40;
+  const C = { text: '#ffffff', sub: '#9a9a9a', up: '#f0883e', down: '#3fb950', cpu: '#4c9aff', ram: '#b083f0', card: 'rgba(255,255,255,0.07)', hot: '#ff4d4d' };
+
+  document.querySelectorAll<HTMLElement>('[data-taskmon-demo]').forEach((root) => {
+    const cv = root.querySelector<HTMLCanvasElement>('canvas.widget')!;
+    const ctx = cv.getContext('2d')!;
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    cv.width = W * dpr;
+    cv.height = H * dpr;
+    cv.style.width = `${W}px`;
+    cv.style.height = `${H}px`;
+    ctx.scale(dpr, dpr);
+    const sprite = new Image();
+    sprite.src = root.dataset.sprite!;
+    const FRAMES = 8, FW = 66, FH = 54;
+
+    let style: Style = 'rings';
+    let drive: 'cpu' | 'ram' | 'net' = 'cpu';
+    let load = 12;
+    let dlUntil = 0;
+    let tabs = 0;
+    // Targets update once a second; shown values ease towards them every frame.
+    const tgt = { up: 30, down: 18, cpu: 12, ram: 62 };
+    const cur = { ...tgt };
+    const hist = { up: Array(40).fill(0.02), down: Array(40).fill(0.02), cpu: Array(40).fill(0.12), ram: Array(40).fill(0.62) };
+    let shift = 0; // 0..1 sub-second scroll of graphs
+
+    const sample = () => {
+      const t = performance.now();
+      const dl = t < dlUntil;
+      tgt.down = dl ? 42000 + Math.random() * 38000 : 8 + Math.random() * 60; // Kbps
+      tgt.up = dl ? 600 + Math.random() * 900 : 6 + Math.random() * 40;
+      tgt.cpu = Math.max(1, Math.min(100, load + (dl ? 8 : 0) + (Math.random() - 0.5) * 8));
+      tabs = Math.max(0, tabs - 0.25);
+      tgt.ram = Math.min(97, 58 + tabs * 1.2 + (Math.random() - 0.5) * 2);
+      const norm = (k: number) => Math.min(1, Math.log10(1 + k) / Math.log10(1 + 100000));
+      hist.up.push(norm(tgt.up)); hist.down.push(norm(tgt.down)); hist.cpu.push(tgt.cpu / 100); hist.ram.push(tgt.ram / 100);
+      for (const k of Object.keys(hist) as (keyof typeof hist)[]) hist[k].shift();
+      shift = 0;
+    };
+    sample();
+    setInterval(sample, 1000);
+
+    const fmt = (kbps: number) => (kbps >= 1000 ? `${(kbps / 1000).toFixed(1)} Mbps` : `${kbps.toFixed(1)} Kbps`);
+    const pulse = (v: number) => v >= 90 && Math.floor(performance.now() / 400) % 2 === 0;
+
+    const graph = (data: number[], x: number, y: number, w: number, h: number, color: string, area: boolean) => {
+      const step = w / (data.length - 2);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.clip();
+      ctx.beginPath();
+      data.forEach((v, i) => {
+        const px = x + (i - shift) * step, py = y + h - v * h;
+        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      });
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = area ? 0.9 : 0.45;
+      ctx.stroke();
+      if (area) {
+        ctx.lineTo(x + w + step, y + h);
+        ctx.lineTo(x - step, y + h);
+        ctx.closePath();
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+      ctx.restore();
+    };
+    const rr = (x: number, y: number, w: number, h: number, r: number, fill: string) => {
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, r);
+      ctx.fillStyle = fill;
+      ctx.fill();
+    };
+    const text = (s: string, x: number, y: number, color = C.text, size = 11.5, align: CanvasTextAlign = 'left', weight = 400) => {
+      ctx.font = `${weight} ${size}px "Segoe UI Variable", "Segoe UI", system-ui, sans-serif`;
+      ctx.fillStyle = color;
+      ctx.textAlign = align;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(s, x, y);
+    };
+    const ring = (cx: number, cy: number, r: number, v: number, color: string, label: string) => {
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = pulse(v) ? C.hot : color;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * v) / 100);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+      text(label, cx, cy + 0.5, color, 8, 'center', 700);
+      text(`${Math.round(v)}%`, cx + r + 5, cy, pulse(v) ? C.hot : C.text, 11.5);
+    };
+
+    // Fox: frame period shrinks as the chosen metric rises (RunCat-style).
+    let frame = 0, acc = 0, last = performance.now();
+    const driveVal = () => (drive === 'cpu' ? cur.cpu : drive === 'ram' ? cur.ram : Math.min(100, (Math.log10(1 + cur.down) / 5) * 100));
+
+    const draw = (t: number) => {
+      const dt = t - last;
+      last = t;
+      shift = Math.min(1, shift + dt / 1000);
+      for (const k of Object.keys(cur) as (keyof typeof cur)[]) cur[k] += (tgt[k] - cur[k]) * Math.min(1, dt / 220);
+      acc += dt;
+      const period = Math.max(28, 200 - driveVal() * 1.7);
+      while (acc > period) { acc -= period; frame = (frame + 1) % FRAMES; }
+
+      ctx.clearRect(0, 0, W, H);
+      if (sprite.complete) ctx.drawImage(sprite, frame * FW, 0, FW, FH, 2, 4, (FW * 32) / FH, 32);
+      const x0 = 44;
+      if (style === 'rings' || style === 'cards') {
+        rr(x0, 4, 104, 32, 7, C.card);
+        text('↑', x0 + 8, 12, C.up, 11);
+        text('↓', x0 + 8, 27, C.down, 11);
+        text(fmt(cur.up), x0 + 98, 12, C.text, 11, 'right');
+        text(fmt(cur.down), x0 + 98, 27, C.text, 11, 'right');
+        graph(hist.down, x0 + 4, 22, 96, 13, C.down, true);
+        if (style === 'rings') {
+          ring(x0 + 128, 20, 12, cur.cpu, C.cpu, 'CPU');
+          ring(x0 + 200, 20, 12, cur.ram, C.ram, 'RAM');
+        } else {
+          for (const [i, k, col, lab] of [[0, 'cpu', C.cpu, 'CPU'], [1, 'ram', C.ram, 'RAM']] as const) {
+            const x = x0 + 110 + i * 74, v = cur[k];
+            rr(x, 4, 68, 32, 7, pulse(v) ? 'rgba(255,77,77,0.28)' : C.card);
+            graph(hist[k], x + 2, 10, 64, 24, col, true);
+            text(lab, x + 7, 13, col, 8.5, 'left', 700);
+            text(`${Math.round(v)}%`, x + 62, 25, C.text, 13, 'right', 700);
+          }
+        }
+      } else if (style === 'subtle') {
+        const cols: [string, string, string, number[], string][] = [
+          ['↑', fmt(cur.up), C.up, hist.up, ''], ['↓', fmt(cur.down), C.down, hist.down, ''],
+          ['▣', `${Math.round(cur.cpu)}%`, C.cpu, hist.cpu, 'cpu'], ['▥', `${Math.round(cur.ram)}%`, C.ram, hist.ram, 'ram'],
+        ];
+        cols.forEach(([ic, val, col, data, k], i) => {
+          const x = x0 + (i < 2 ? 0 : 104 + (i - 2) * 58), y = i % 2 === 0 || i > 1 ? (i > 1 ? 20 : 12) : 28;
+          const v = k ? cur[k as 'cpu' | 'ram'] : 0;
+          graph(data, x, y - 7, i < 2 ? 96 : 52, 14, col, false);
+          text(ic, x + 4, y, col, 10.5);
+          text(val, x + (i < 2 ? 94 : 50), y, pulse(v) ? C.hot : C.text, 11.5, 'right');
+        });
+      } else {
+        text(`↑ ${fmt(cur.up)}`, x0, 12, C.text, 11.5);
+        text(`↓ ${fmt(cur.down)}`, x0, 28, C.text, 11.5);
+        text(`CPU ${Math.round(cur.cpu)}%`, x0 + 112, 12, pulse(cur.cpu) ? C.hot : C.text, 11.5);
+        text(`RAM ${Math.round(cur.ram)}%`, x0 + 112, 28, pulse(cur.ram) ? C.hot : C.text, 11.5);
+      }
+      requestAnimationFrame(draw);
+    };
+    requestAnimationFrame(draw);
+
+    root.querySelectorAll<HTMLElement>('.seg').forEach((seg) =>
+      seg.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
+        if (!b) return;
+        seg.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+        if (seg.dataset.k === 'style') style = b.dataset.v as Style;
+        else drive = b.dataset.v as typeof drive;
+      }),
+    );
+    const range = root.querySelector<HTMLInputElement>('[data-load]')!;
+    const out = root.querySelector('output')!;
+    range.addEventListener('input', () => {
+      load = Number(range.value);
+      out.textContent = `${load}%`;
+      sample();
+    });
+    root.querySelector('[data-act=download]')!.addEventListener('click', () => {
+      dlUntil = performance.now() + 7000;
+      sample();
+    });
+    root.querySelector('[data-act=tabs]')!.addEventListener('click', () => {
+      tabs = Math.min(32, tabs + 30);
+      sample();
+    });
+  });
+</script>
+
+<style>
+  .widget {
+    display: block;
+  }
+  .panel {
+    position: absolute;
+    left: 50%;
+    top: 22px;
+    transform: translateX(-50%);
+    width: min(440px, calc(100% - 32px));
+    background: #2b2b2b;
+    border: 1px solid #3c3c3c;
+    border-radius: 10px;
+    box-shadow: 0 18px 40px rgb(0 0 0 / 0.5);
+    font-size: 13px;
+    overflow: hidden;
+  }
+  .bar {
+    padding: 9px 14px;
+    font-size: 12px;
+    color: #bdbdbd;
+    border-bottom: 1px solid #383838;
+    background: #242424;
+  }
+  .grp {
+    padding: 10px 14px;
+    display: grid;
+    gap: 8px;
+  }
+  .grp + .grp {
+    border-top: 1px solid #353535;
+  }
+  .lbl {
+    font-size: 11px;
+    color: #a8a8a8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .seg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .seg button,
+  .acts button {
+    font: 500 12.5px 'Segoe UI', var(--display);
+    color: #eaeaea;
+    background: #353535;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 6px 11px;
+    cursor: pointer;
+  }
+  .seg button.on {
+    background: #60cdff;
+    border-color: #60cdff;
+    color: #0b0a09;
+    font-weight: 600;
+  }
+  .acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .acts button:hover,
+  .seg button:hover {
+    border-color: #60cdff;
+  }
+  .slider {
+    display: grid;
+    grid-template-columns: auto 1fr 44px;
+    gap: 10px;
+    align-items: center;
+    color: #eaeaea;
+  }
+  .slider input {
+    accent-color: #60cdff;
+  }
+  .slider output {
+    text-align: right;
+    font: 12px var(--mono);
+  }
+</style>

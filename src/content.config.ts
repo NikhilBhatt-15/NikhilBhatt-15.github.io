@@ -20,6 +20,8 @@ const products = defineCollection({
     genre: z.string(), // e.g. "Utility · Productivity"
     // Poster colours: background, ink, accent.
     poster: z.object({ bg: z.string(), ink: z.string(), accent: z.string(), motif: z.string() }),
+    // Interactive in-browser demo shown on the product page and in the home page's screening room.
+    demo: z.enum(['evbar', 'clipstash', 'taskmon', 'showbuzz', 'nib']).optional(),
     screenshots: z.array(z.object({ src: z.string(), alt: z.string() })).default([]),
     install: z.array(z.string()).default([]), // numbered install steps (Markdown allowed)
     usage: z.array(z.string()).default([]),

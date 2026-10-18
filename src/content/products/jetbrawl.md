@@ -8,6 +8,11 @@ platform: Android · Windows
 language: C++
 genre: Game · Multiplayer
 poster: { bg: '#170f05', ink: '#fff1d6', accent: '#ffb000', motif: jet }
+screenshots:
+  - { src: /products/jetbrawl-action.webp, alt: 'A match against bots: headshot, kill feed, radar and jetpack fuel' }
+  - { src: /products/jetbrawl-jetpack.webp, alt: Jetpacking across the map with an assault rifle }
+  - { src: /products/jetbrawl-menu.webp, alt: Main menu with bots and LAN multiplayer }
+  - { src: /products/jetbrawl-soldier.webp, alt: Soldier editor with hats, hair, faces and outfits }
 stack: [C++, Axmol (cocos2d-x), Chipmunk physics, Tiled, RakNet / SLikeNet]
 ---
 

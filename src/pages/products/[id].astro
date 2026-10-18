@@ -2,6 +2,7 @@
 import { render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import Poster from '../../components/Poster.astro';
+import Demo from '../../components/demos/Demo.astro';
 import { getProducts } from '../../lib/content';
 import { latestRelease, fmtSize } from '../../lib/releases';
 import { url, fmtDate, inlineMd, blockMd } from '../../lib/data';
@@ -102,10 +103,23 @@ const status = p.kind === 'coming-soon' ? 'COMING SOON' : 'NOW SHOWING';
           )
         }
         <div class="links">
+          {p.demo && <a href="#try">▶ Try it in your browser</a>}
           {p.kind !== 'coming-soon' && <a href={gh}>Source on GitHub ↗</a>}
           {rel && <a href={`${gh}/releases`}>All releases ↗</a>}
           {rel && <a href={rel.url}>What's new in {rel.tag} ↗</a>}
         </div>
+
+        {
+          p.demo && (
+            <section class="try" id="try">
+              <h2>
+                <span class="live">▶</span> Try it <em>live</em>
+              </h2>
+              <p class="try-sub">A working replica of the real {p.name} UI, right here in your browser. Nothing to install.</p>
+              <Demo name={p.demo} />
+            </section>
+          )
+        }
 
         {
           p.screenshots.length > 0 && (
@@ -406,6 +420,36 @@ const status = p.kind === 'coming-soon' ? 'COMING SOON' : 'NOW SHOWING';
     color: var(--dim);
   }
 
+  .try {
+    margin-top: 56px;
+  }
+  .try h2 {
+    font-size: clamp(30px, 3.8vw, 48px);
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin: 0 0 8px;
+  }
+  .try h2 em {
+    font-family: var(--serif);
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .live {
+    display: inline-grid;
+    place-items: center;
+    width: 1.1em;
+    height: 1.1em;
+    font-size: 0.5em;
+    vertical-align: middle;
+    border-radius: 50%;
+    background: var(--red);
+    color: #fff;
+    box-shadow: 0 0 18px var(--red);
+  }
+  .try-sub {
+    color: var(--dim);
+    margin: 0 0 20px;
+  }
   .shots {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));

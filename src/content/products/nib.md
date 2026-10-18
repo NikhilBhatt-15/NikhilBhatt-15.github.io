@@ -8,6 +8,10 @@ platform: Windows 10/11
 language: Rust
 genre: Editor · Writing
 poster: { bg: '#f1ebe0', ink: '#1a1612', accent: '#c2410c', motif: nib }
+demo: nib
+screenshots:
+  - { src: /products/nib-preview.webp, alt: Nib with a Markdown file and live preview side by side }
+  - { src: /products/nib-code.webp, alt: Nib editing a Rust file with syntax highlighting }
 install:
   - 'Download the `Nib` zip with the button above and extract it anywhere. No installer and no admin rights.'
   - 'Run `nib.exe`.'

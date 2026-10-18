@@ -1,0 +1,20 @@
+---
+// Picks the interactive demo for a product by name (the `demo:` field in its frontmatter).
+import EvbarDemo from './EvbarDemo.astro';
+import ClipstashDemo from './ClipstashDemo.astro';
+import TaskmonDemo from './TaskmonDemo.astro';
+import ShowbuzzDemo from './ShowbuzzDemo.astro';
+import NibDemo from './NibDemo.astro';
+
+export const DEMOS = ['evbar', 'clipstash', 'taskmon', 'showbuzz', 'nib'] as const;
+interface Props {
+  name: (typeof DEMOS)[number];
+}
+const { name } = Astro.props;
+---
+
+{name === 'evbar' && <EvbarDemo />}
+{name === 'clipstash' && <ClipstashDemo />}
+{name === 'taskmon' && <TaskmonDemo />}
+{name === 'showbuzz' && <ShowbuzzDemo />}
+{name === 'nib' && <NibDemo />}

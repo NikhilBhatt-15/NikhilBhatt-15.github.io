@@ -81,6 +81,10 @@ content:
             label: Motif
             type: select
             options: { values: [stack, lens, nib, runner, seats, jet] }
+      - name: demo
+        label: Interactive demo (Try it live)
+        type: select
+        options: { values: [evbar, clipstash, taskmon, showbuzz, nib] }
       - name: screenshots
         label: Screenshots
         type: object
