@@ -1,0 +1,210 @@
+---
+// "World premiere" pop-up: a dismissible ticket that invites visitors to try something new.
+// Configured in src/data/spotlight.yaml (also editable in Pages CMS).
+import { spotlight as s, url } from '../lib/data';
+
+const path = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(/\/$/, ''), '') || '/';
+const show = s.enabled && !(s.hideOn ?? []).some((p) => path === p || path === p.replace(/\/$/, ''));
+const external = /^https?:/.test(s.href);
+---
+
+{
+  show && (
+    <aside class="spot-ticket" data-spotlight data-id={s.id} data-delay={s.delaySeconds ?? 4} aria-label={`${s.label}: ${s.title}`} hidden>
+      <button class="x" type="button" aria-label="Dismiss">
+        ×
+      </button>
+      {s.image && <img src={url(s.image)} alt="" loading="lazy" />}
+      <div class="body">
+        <span class="lbl">
+          <span class="rec" />
+          {s.label}
+        </span>
+        <strong>{s.title}</strong>
+        <p>{s.text}</p>
+        <div class="acts">
+          <a class="go" href={external ? s.href : url(s.href)} target={external ? '_blank' : undefined} rel={external ? 'noopener' : undefined} data-go>
+            ▶ {s.cta}
+          </a>
+          {s.more && (
+            <a class="more" href={url(s.more)}>
+              How it works
+            </a>
+          )}
+        </div>
+      </div>
+    </aside>
+  )
+}
+
+<script>
+  const el = document.querySelector<HTMLElement>('[data-spotlight]');
+  if (el) {
+    const key = `spotlight-dismissed:${el.dataset.id}`;
+    let dismissed = false;
+    try {
+      dismissed = localStorage.getItem(key) === '1';
+    } catch {}
+    const close = () => {
+      el.classList.remove('in');
+      setTimeout(() => (el.hidden = true), 400);
+      try {
+        localStorage.setItem(key, '1');
+      } catch {}
+    };
+    if (!dismissed) {
+      // Wait for the delay, and never on top of the opening countdown.
+      const open = () => {
+        if (document.documentElement.classList.contains('leader-on')) return setTimeout(open, 800);
+        el.hidden = false;
+        requestAnimationFrame(() => el.classList.add('in'));
+      };
+      setTimeout(open, (Number(el.dataset.delay) || 4) * 1000);
+      el.querySelector('.x')!.addEventListener('click', close);
+      el.querySelector('[data-go]')!.addEventListener('click', () => {
+        try {
+          localStorage.setItem(key, '1');
+        } catch {}
+        el.classList.remove('in');
+      });
+      addEventListener('keydown', (e) => e.key === 'Escape' && !el.hidden && close());
+    }
+  }
+</script>
+
+<style>
+  .spot-ticket {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 80;
+    width: min(360px, calc(100vw - 32px));
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    background: var(--ink);
+    color: var(--bg);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -20px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(255 255 255 / 0.1), 0 0 50px -10px rgb(255 77 61 / 0.45);
+    transform: translateY(24px) scale(0.98);
+    opacity: 0;
+    transition: transform 0.5s var(--ease), opacity 0.5s var(--ease);
+  }
+  .spot-ticket.in {
+    transform: none;
+    opacity: 1;
+  }
+  .spot-ticket[hidden] {
+    display: none;
+  }
+  /* Perforated edge between the still and the text, like a ticket stub. */
+  .spot-ticket::before {
+    content: '';
+    position: absolute;
+    left: 89px;
+    top: 0;
+    bottom: 0;
+    width: 14px;
+    background: radial-gradient(circle at 7px 7px, var(--bg) 4px, transparent 4.5px) 0 0 / 14px 14px repeat-y;
+    z-index: 1;
+  }
+  img {
+    width: 96px;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    background: #f6e3cf;
+  }
+  .body {
+    display: grid;
+    gap: 4px;
+    padding: 14px 34px 14px 16px;
+  }
+  .lbl {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font: 600 10px var(--mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #b42318;
+  }
+  .rec {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--red);
+    animation: blink 1.6s steps(1) infinite;
+  }
+  @keyframes blink {
+    50% { opacity: 0.2; }
+  }
+  strong {
+    font-size: 22px;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+  }
+  p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: rgb(11 10 9 / 0.72);
+  }
+  .acts {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .go {
+    font: 700 13px var(--display);
+    color: var(--ink);
+    background: var(--bg);
+    padding: 8px 13px;
+    border-radius: 999px;
+    text-decoration: none;
+  }
+  .go:hover {
+    background: var(--red);
+    color: #fff;
+  }
+  .more {
+    font-size: 12.5px;
+    color: rgb(11 10 9 / 0.7);
+  }
+  .more:hover {
+    color: var(--bg);
+  }
+  .x {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: rgb(11 10 9 / 0.55);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .x:hover {
+    background: rgb(11 10 9 / 0.08);
+    color: var(--bg);
+  }
+  @media (max-width: 480px) {
+    .spot-ticket {
+      right: 16px;
+      bottom: 16px;
+      grid-template-columns: 74px 1fr;
+    }
+    .spot-ticket::before {
+      left: 67px;
+    }
+    img {
+      width: 74px;
+    }
+  }
+</style>

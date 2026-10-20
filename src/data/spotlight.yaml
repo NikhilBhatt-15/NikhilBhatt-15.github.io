@@ -1,0 +1,18 @@
+# ─────────────────────────────────────────────────────────────
+#  The "World premiere" pop-up that invites visitors to try something new.
+#  It slides in a few seconds after a page loads, bottom-right, until the visitor closes it.
+#  To announce something else later, change the text AND the id. A new id shows the
+#  pop-up again to people who dismissed the old one.
+# ─────────────────────────────────────────────────────────────
+enabled: true
+id: molbhav-premiere
+label: World premiere
+title: Mol-Bhav
+text: Can you out-bargain an AI shopkeeper? Haggle in Hinglish and find the jugaad that breaks its rule.
+image: /products/molbhav-pinky.webp
+cta: Play now
+href: https://molbhav-nikhil.azurewebsites.net/
+more: /products/molbhav/ # "How it works" link (leave empty to hide)
+delaySeconds: 4
+# Don't show it on these pages (e.g. the product's own page).
+hideOn: [/products/molbhav/, /hire/]

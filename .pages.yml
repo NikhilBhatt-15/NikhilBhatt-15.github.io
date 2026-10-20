@@ -69,7 +69,9 @@ content:
       - name: kind
         label: Kind
         type: select
-        options: { values: [download, self-host, coming-soon] }
+        options: { values: [download, web, self-host, coming-soon] }
+      - { name: live, label: 'Live URL (for kind: web)', type: string }
+      - { name: badge, label: 'Badge on the card (e.g. New)', type: string }
       - name: poster
         label: Poster
         type: object
@@ -80,7 +82,7 @@ content:
           - name: motif
             label: Motif
             type: select
-            options: { values: [stack, lens, nib, runner, seats, jet] }
+            options: { values: [stack, lens, nib, runner, seats, jet, tag] }
       - name: demo
         label: Interactive demo (Try it live)
         type: select
@@ -177,6 +179,24 @@ content:
           - { name: school, type: string }
           - { name: degree, type: string }
           - { name: years, type: string }
+
+  - name: spotlight
+    label: 📣 Premiere pop-up
+    type: file
+    path: src/data/spotlight.yaml
+    format: yaml
+    fields:
+      - { name: enabled, label: Show the pop-up, type: boolean }
+      - { name: id, label: 'ID (change it to show a new announcement to everyone again)', type: string }
+      - { name: label, label: 'Small label (e.g. World premiere)', type: string }
+      - { name: title, label: Title, type: string }
+      - { name: text, label: Text, type: text }
+      - { name: image, label: Image, type: image }
+      - { name: cta, label: Button text, type: string }
+      - { name: href, label: Button link, type: string }
+      - { name: more, label: '"How it works" link (optional)', type: string }
+      - { name: delaySeconds, label: Seconds before it appears, type: number }
+      - { name: hideOn, label: "Don't show on these pages", type: string, list: true }
 
   - name: freelance
     label: 🤝 Freelance / Hire me

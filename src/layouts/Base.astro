@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import { profile, url } from '../lib/data';
 import Credits from '../components/Credits.astro';
+import Spotlight from '../components/Spotlight.astro';
 
 interface Props {
   title?: string;
@@ -108,6 +109,7 @@ const ogImage = new URL(image ?? url('/og.jpg'), Astro.site);
     </main>
 
     <Credits />
+    <Spotlight />
 
     <div class="hud mono" aria-hidden="true">
       <span class="hud-dot"></span>

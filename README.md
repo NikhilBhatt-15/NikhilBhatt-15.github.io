@@ -64,6 +64,7 @@ runtimes, get a free [TMDB API key](https://www.themoviedb.org/settings/api) and
 |---|---|
 | Name, tagline, about, "currently", stats, skills, links, education | `src/data/profile.yaml` |
 | Jobs | `src/data/experience.yaml` |
+| "World premiere" pop-up (what it promotes, on/off, delay) | `src/data/spotlight.yaml` (change `id` to re-show it to everyone) |
 | Freelance page: services, process, FAQ, meeting days/hours, Cal.com link | `src/data/freelance.yaml` |
 | Opening countdown (on/off, every visit, numbers, speed) | `intro:` in `src/data/profile.yaml` |
 | End credits in the footer ("Catering: Chai, mostly") | `credits:` in `src/data/profile.yaml` |

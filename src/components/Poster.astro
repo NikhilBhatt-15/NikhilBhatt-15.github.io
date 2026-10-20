@@ -2,6 +2,7 @@
 // A generated one-sheet movie poster for a product. Pure SVG, so it is sharp at any size.
 interface Props {
   name: string;
+  kind?: string;
   tagline: string;
   platform: string;
   language: string;
@@ -11,7 +12,7 @@ interface Props {
   status?: string; // e.g. "NOW SHOWING" / "COMING SOON"
   class?: string;
 }
-const { name, tagline, platform, language, genre, poster, version, status = 'NOW SHOWING', class: cls } = Astro.props;
+const { name, kind = 'download', tagline, platform, language, genre, poster, version, status = 'NOW SHOWING', class: cls } = Astro.props;
 const { bg, ink, accent, motif } = poster;
 const id = name.toLowerCase().replace(/[^a-z0-9]/g, '');
 const big = name.toUpperCase();
@@ -20,7 +21,12 @@ const em = [...big].reduce((s, c) => s + (/[MW]/.test(c) ? 0.9 : /[IJ1]/.test(c)
 const nameSize = Math.min(118, Math.floor(344 / em));
 const titleY = 512;
 const taglineY = titleY - nameSize * 0.74 - 16;
-const billing = `A NIKHIL BHATT PRODUCTION · WRITTEN IN ${language.toUpperCase()} · ${genre.toUpperCase()} · NO RUNTIME REQUIRED · ${version ? `RELEASE ${version.toUpperCase()}` : 'IN DEVELOPMENT'}`;
+const tail =
+  kind === 'web' ? 'NOW PLAYING ONLINE · FREE ADMISSION'
+  : kind === 'self-host' ? 'RUNS ON DOCKER'
+  : kind === 'coming-soon' ? 'IN DEVELOPMENT'
+  : `NO RUNTIME REQUIRED · ${version ? `RELEASE ${version.toUpperCase()}` : 'IN DEVELOPMENT'}`;
+const billing = `A NIKHIL BHATT PRODUCTION · WRITTEN IN ${language.toUpperCase()} · ${genre.toUpperCase()} · ${tail}`;
 const seats = Array.from({ length: 7 * 9 }, (_, i) => ({ r: Math.floor(i / 9), c: i % 9 }));
 const picked = new Set([30, 31, 32]);
 ---
@@ -131,6 +137,25 @@ const picked = new Set([30, 31, 32]);
           <circle cx="300" cy="118" r="34" stroke={accent} stroke-width="3" />
           <path d="M300 70 V100 M300 136 V166 M252 118 H282 M318 118 H348" stroke={accent} stroke-width="3" />
           <circle cx="300" cy="118" r="5" fill={accent} stroke="none" />
+        </g>
+      )
+    }
+    {
+      motif === 'tag' && (
+        <g>
+          <path d="M120 60 C 150 20, 250 20, 262 86" stroke={ink} stroke-opacity="0.5" stroke-width="2.5" />
+          <g transform="rotate(-12 200 200)">
+            <path d="M120 100 H 300 a10 10 0 0 1 10 10 V 290 a10 10 0 0 1 -10 10 H 120 L 80 200 Z" fill={ink} stroke="none" />
+            <circle cx="112" cy="200" r="11" fill={bg} stroke="none" />
+            <text x="215" y="178" fill={bg} fill-opacity="0.45" text-anchor="middle" font-size="40" font-weight="800" style="font-family:var(--display)">₹1,200</text>
+            <path d="M150 166 L 282 166" stroke={accent} stroke-width="6" />
+            <text x="215" y="252" fill={accent} text-anchor="middle" font-size="62" font-weight="900" style="font-family:var(--display)">₹480</text>
+          </g>
+          <g transform="translate(250 300)">
+            <rect width="118" height="50" rx="14" fill={accent} stroke="none" />
+            <path d="M24 50 l-6 16 l20 -16 z" fill={accent} stroke="none" />
+            <text x="59" y="32" fill={bg} text-anchor="middle" font-size="18" font-weight="800" style="font-family:var(--display)">Bhaiya…</text>
+          </g>
         </g>
       )
     }

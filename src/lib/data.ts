@@ -78,3 +78,19 @@ export interface Freelance {
 }
 
 export const freelance: Freelance = parse(readFileSync('src/data/freelance.yaml', 'utf8'));
+
+export interface Spotlight {
+  enabled: boolean;
+  id: string;
+  label: string;
+  title: string;
+  text: string;
+  image?: string;
+  cta: string;
+  href: string;
+  more?: string;
+  delaySeconds?: number;
+  hideOn?: string[];
+}
+
+export const spotlight: Spotlight = parse(readFileSync('src/data/spotlight.yaml', 'utf8'));

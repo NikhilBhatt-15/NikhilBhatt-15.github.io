@@ -15,18 +15,23 @@ const status = p.kind === 'coming-soon' ? 'COMING SOON' : 'NOW SHOWING';
 
 <article class="card reveal">
   <a class="frame" href={url(`/products/${product.id}/`)} aria-label={`${p.name}: details and download`}>
+    {p.badge && <span class="badge mono">{p.badge}</span>}
     <Poster {...p} version={rel?.tag} status={status} />
   </a>
   <div class="meta">
     <div class="row">
       <h3><a href={url(`/products/${product.id}/`)}>{p.name}</a></h3>
-      <span class="mono tag">{rel ? rel.tag : p.kind === 'self-host' ? 'docker' : 'soon'}</span>
+      <span class="mono tag">{rel ? rel.tag : p.kind === 'web' ? 'play online' : p.kind === 'self-host' ? 'docker' : 'soon'}</span>
     </div>
     <p>{p.tagline}</p>
     <div class="row foot">
       <span class="mono dim">{p.platform} · {p.language}</span>
       {
-        rel?.asset ? (
+        p.kind === 'web' && p.live ? (
+          <a class="dl" href={p.live} target="_blank" rel="noopener">
+            Play now ↗
+          </a>
+        ) : rel?.asset ? (
           <a class="dl" href={rel.asset.download}>
             Download <span class="dim">{fmtSize(rel.asset.size)}</span> ↓
           </a>
@@ -47,6 +52,7 @@ const status = p.kind === 'coming-soon' ? 'COMING SOON' : 'NOW SHOWING';
     align-content: start;
   }
   .frame {
+    position: relative;
     display: block;
     transition: transform 0.6s var(--ease);
     perspective: 900px;
@@ -71,6 +77,20 @@ const status = p.kind === 'coming-soon' ? 'COMING SOON' : 'NOW SHOWING';
   }
   h3 a {
     text-decoration: none;
+  }
+  .badge {
+    position: absolute;
+    top: -10px;
+    right: -8px;
+    z-index: 2;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--red);
+    padding: 6px 10px;
+    border-radius: 999px;
+    box-shadow: 0 0 22px rgb(255 77 61 / 0.6);
+    transform: rotate(6deg);
   }
   .tag {
     font-size: 11px;

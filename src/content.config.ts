@@ -16,7 +16,9 @@ const products = defineCollection({
     asset: z.string().optional(),
     platform: z.string(), // shown as the "rating" on the poster, e.g. "Windows 10/11"
     language: z.string(),
-    kind: z.enum(['download', 'self-host', 'coming-soon']).default('download'),
+    kind: z.enum(['download', 'web', 'self-host', 'coming-soon']).default('download'),
+    live: z.url().optional(), // for kind: web, the URL people play/use it at
+    badge: z.string().optional(), // small label on the card, e.g. New
     genre: z.string(), // e.g. "Utility · Productivity"
     // Poster colours: background, ink, accent.
     poster: z.object({ bg: z.string(), ink: z.string(), accent: z.string(), motif: z.string() }),

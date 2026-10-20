@@ -81,6 +81,21 @@ const status = p.kind === 'coming-soon' ? 'COMING SOON' : 'NOW SHOWING';
                 )}
               </div>
             </div>
+          ) : p.kind === 'web' && p.live ? (
+            <div class="ticket">
+              <div class="t-main">
+                <span class="mono t-admit">Admit one · plays in your browser</span>
+                <span class="t-file">Free to play</span>
+                <span class="mono dim t-sub">{new URL(p.live).host} · no sign-up · works on phones</span>
+                <a class="btn primary" href={p.live} target="_blank" rel="noopener">
+                  Play {p.name} now ↗
+                </a>
+              </div>
+              <div class="t-stub">
+                <span class="mono t-admit">Heads up</span>
+                <span class="stub-note">It runs on a free server that naps when idle, so the first visit can take about 20 seconds to wake up.</span>
+              </div>
+            </div>
           ) : p.kind === 'self-host' ? (
             <div class="ticket">
               <div class="t-main">
@@ -104,6 +119,7 @@ const status = p.kind === 'coming-soon' ? 'COMING SOON' : 'NOW SHOWING';
         }
         <div class="links">
           {p.demo && <a href="#try">▶ Try it in your browser</a>}
+          {p.kind === 'web' && p.live && <a href={p.live} target="_blank" rel="noopener">▶ Play it live ↗</a>}
           {p.kind !== 'coming-soon' && <a href={gh}>Source on GitHub ↗</a>}
           {rel && <a href={`${gh}/releases`}>All releases ↗</a>}
           {rel && <a href={rel.url}>What's new in {rel.tag} ↗</a>}
@@ -147,7 +163,8 @@ const status = p.kind === 'coming-soon' ? 'COMING SOON' : 'NOW SHOWING';
           p.install.length > 0 && (
             <section class="steps">
               <h2>
-                How to <em>install</em>
+                {p.kind === 'web' ? 'Run it ' : 'How to '}
+                <em>{p.kind === 'web' ? 'yourself' : 'install'}</em>
               </h2>
               <ol>
                 {p.install.map((s) => (
@@ -174,7 +191,7 @@ const status = p.kind === 'coming-soon' ? 'COMING SOON' : 'NOW SHOWING';
           p.usage.length > 0 && (
             <section class="steps">
               <h2>
-                How to <em>use it</em>
+                How to <em>{p.kind === 'web' ? 'play' : 'use it'}</em>
               </h2>
               <ul class="use">
                 {p.usage.map((s) => (
@@ -371,6 +388,11 @@ const status = p.kind === 'coming-soon' ? 'COMING SOON' : 'NOW SHOWING';
     background: var(--accent);
     color: var(--accent-ink);
     border-color: var(--accent);
+  }
+  .stub-note {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: rgb(11 10 9 / 0.75);
   }
   .hash {
     background: none;
