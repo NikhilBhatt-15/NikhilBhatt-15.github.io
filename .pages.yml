@@ -71,6 +71,7 @@ content:
         type: select
         options: { values: [download, web, self-host, coming-soon] }
       - { name: live, label: 'Live URL (for kind: web)', type: string }
+      - { name: requires, label: 'Requires (runtime shown on the poster; leave empty for standalone apps)', type: string }
       - { name: badge, label: 'Badge on the card (e.g. New)', type: string }
       - name: poster
         label: Poster
@@ -82,7 +83,7 @@ content:
           - name: motif
             label: Motif
             type: select
-            options: { values: [stack, lens, nib, runner, seats, jet, tag] }
+            options: { values: [stack, lens, nib, runner, seats, jet, tag, seek] }
       - name: demo
         label: Interactive demo (Try it live)
         type: select

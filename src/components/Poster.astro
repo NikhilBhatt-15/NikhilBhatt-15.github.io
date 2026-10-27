@@ -8,11 +8,12 @@ interface Props {
   language: string;
   genre: string;
   poster: { bg: string; ink: string; accent: string; motif: string };
+  requires?: string; // runtime the product needs, e.g. "Python + Ollama"
   version?: string;
   status?: string; // e.g. "NOW SHOWING" / "COMING SOON"
   class?: string;
 }
-const { name, kind = 'download', tagline, platform, language, genre, poster, version, status = 'NOW SHOWING', class: cls } = Astro.props;
+const { name, kind = 'download', tagline, platform, language, genre, poster, requires, version, status = 'NOW SHOWING', class: cls } = Astro.props;
 const { bg, ink, accent, motif } = poster;
 const id = name.toLowerCase().replace(/[^a-z0-9]/g, '');
 const big = name.toUpperCase();
@@ -25,10 +26,15 @@ const tail =
   kind === 'web' ? 'NOW PLAYING ONLINE · FREE ADMISSION'
   : kind === 'self-host' ? 'RUNS ON DOCKER'
   : kind === 'coming-soon' ? 'IN DEVELOPMENT'
-  : `NO RUNTIME REQUIRED · ${version ? `RELEASE ${version.toUpperCase()}` : 'IN DEVELOPMENT'}`;
+  : `${requires ? `REQUIRES ${requires.toUpperCase()}` : 'NO RUNTIME REQUIRED'} · ${version ? `RELEASE ${version.toUpperCase()}` : 'IN DEVELOPMENT'}`;
 const billing = `A NIKHIL BHATT PRODUCTION · WRITTEN IN ${language.toUpperCase()} · ${genre.toUpperCase()} · ${tail}`;
 const seats = Array.from({ length: 7 * 9 }, (_, i) => ({ r: Math.floor(i / 9), c: i % 9 }));
 const picked = new Set([30, 31, 32]);
+// "seek": an editor page of code lines (indent, width); line 7 is the match.
+const codeLines = [
+  [0, 150], [24, 210], [24, 120], [48, 180], [0, 0], [0, 170], [24, 230],
+  [24, 200], [48, 140], [24, 90], [0, 0], [0, 190],
+].map(([indent, w]) => ({ x: 72 + indent, w }));
 ---
 
 <svg class:list={['poster', cls]} viewBox="0 0 400 600" role="img" aria-label={`${name} poster: ${tagline}`}>
@@ -76,6 +82,18 @@ const picked = new Set([30, 31, 32]);
           <circle cx="190" cy="196" r="56" fill={accent} fill-opacity="0.12" stroke="none" />
           <path d="M240 246 L300 306" stroke={accent} stroke-width="22" />
           <path d="M160 170 a40 40 0 0 1 34 -16" stroke={ink} stroke-width="6" stroke-opacity="0.8" />
+        </g>
+      )
+    }
+    {
+      motif === 'seek' && (
+        <g>
+          {codeLines.map(({ x, w }, i) => (
+            <rect x={x} y={64 + i * 24} width={w} height="9" rx="4.5" fill={i === 7 ? accent : ink} fill-opacity={i === 7 ? 1 : 0.16} stroke="none" />
+          ))}
+          <circle cx="226" cy="236" r="66" fill={bg} fill-opacity="0.35" stroke={accent} stroke-width="12" />
+          <path d="M273 283 L326 336" stroke={accent} stroke-width="20" />
+          <path d="M196 206 a38 38 0 0 1 30 -12" stroke={ink} stroke-width="5" stroke-opacity="0.7" />
         </g>
       )
     }
