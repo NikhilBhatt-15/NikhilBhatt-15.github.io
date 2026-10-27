@@ -7,6 +7,7 @@ asset: '*.whl'
 platform: Python 3.10+
 language: Python
 requires: Python + Ollama
+demo: codeseek
 badge: New
 genre: Developer tool · AI
 poster: { bg: '#0d1117', ink: '#e6edf3', accent: '#7ee787', motif: seek }

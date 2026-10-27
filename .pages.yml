@@ -87,7 +87,7 @@ content:
       - name: demo
         label: Interactive demo (Try it live)
         type: select
-        options: { values: [evbar, clipstash, taskmon, showbuzz, nib] }
+        options: { values: [evbar, clipstash, taskmon, showbuzz, nib, codeseek] }
       - name: screenshots
         label: Screenshots
         type: object

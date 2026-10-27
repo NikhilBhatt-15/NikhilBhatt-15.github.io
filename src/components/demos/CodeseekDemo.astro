@@ -1,0 +1,261 @@
+---
+import Desktop from './Desktop.astro';
+import data from '../../data/codeseek-demo.json';
+
+// Real output recorded from `codeseek search` on the clipstash repo (see the JSON's commit_note).
+// Escape "<" so the JSON can't close the script tag it lives in.
+const json = JSON.stringify(data).replace(/</g, '\\u003c');
+---
+
+<div class="csd" data-codeseek-demo>
+  <script type="application/json" set:html={json} />
+  <Desktop label="codeseek demo: semantic search in a terminal" height={480}>
+    <div class="term" role="group" aria-label="Terminal running codeseek">
+      <div class="tabs">
+        <span class="tab"><i>›_</i> PowerShell</span>
+        <span class="tab-plus" aria-hidden="true">+</span>
+        <span class="ctl" aria-hidden="true"><b>─</b><b>□</b><b>✕</b></span>
+      </div>
+      <div class="out" aria-live="polite" tabindex="0"></div>
+      <div class="ask">
+        <div class="chips" role="list" aria-label="Example questions"></div>
+        <form class="line">
+          <span class="ps">PS&nbsp;~\clipstash&gt;</span>
+          <span class="cmd">codeseek search</span>
+          <input aria-label="Search query" placeholder='"type a question…"' autocomplete="off" spellcheck="false" />
+        </form>
+      </div>
+    </div>
+    <Fragment slot="help">
+      These are <em>real results</em> recorded from codeseek on the
+      <a href="https://github.com/NikhilBhatt-15/clipstash" target="_blank" rel="noopener">clipstash</a> repo.
+      You ask in plain English instead of guessing function names. To search any repo live, try
+      <a href="https://nikhilbhatt-15.github.io/codeseek-chat/" target="_blank" rel="noopener">codeseek chat ↗</a>.
+    </Fragment>
+  </Desktop>
+</div>
+
+<script>
+  interface Hit { path: string; start: number; end: number; score: number; lines: string[] }
+  interface Query { query: string; ms: number; hits: Hit[] }
+  interface Data { repo: string; index: { files: number; chunks: number; seconds: number }; queries: Query[] }
+
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, reduced ? 0 : ms));
+
+  document.querySelectorAll<HTMLElement>('[data-codeseek-demo]').forEach((root) => {
+    const data = JSON.parse(root.querySelector('script[type="application/json"]')!.textContent!) as Data;
+    const out = root.querySelector<HTMLElement>('.out')!;
+    const chips = root.querySelector<HTMLElement>('.chips')!;
+    const form = root.querySelector<HTMLFormElement>('form.line')!;
+    const input = form.querySelector('input')!;
+    let busy = false;
+
+    const line = (...parts: [string, string?][]) => {
+      const div = document.createElement('div');
+      for (const [text, cls] of parts) {
+        const span = document.createElement('span');
+        if (cls) span.className = cls;
+        span.textContent = text;
+        div.append(span);
+      }
+      out.append(div);
+      out.scrollTop = out.scrollHeight;
+      return div;
+    };
+    const prompt = () => line(['PS ~\\clipstash> ', 'ps']);
+
+    // Same layout as the real CLI: magenta location, green score, dim numbered snippet.
+    const printHits = (q: Query) => {
+      for (const h of q.hits) {
+        line([`${h.path}:${h.start}-${h.end}`, 'loc'], ['  '], [h.score.toFixed(3), 'score']);
+        h.lines.slice(0, 6).forEach((text, i) => line([`${String(h.start + i).padStart(6)} | `, 'dim'], [text]));
+        line(['']);
+      }
+      line([`(${q.hits.length} results in ${(q.ms / 1000).toFixed(2)}s)`, 'dim']);
+    };
+
+    async function run(text: string) {
+      if (busy) return;
+      busy = true;
+      chips.querySelectorAll('button').forEach((b) => (b.disabled = true));
+      const cmdLine = prompt();
+      const cmd = document.createElement('span');
+      cmdLine.append(cmd);
+      const full = `codeseek search "${text}"`;
+      for (let i = 1; i <= full.length; i++) {
+        cmd.textContent = full.slice(0, i);
+        await sleep(14);
+      }
+      await sleep(260);
+      const q = data.queries.find((x) => x.query.toLowerCase() === text.trim().toLowerCase().replace(/^"|"$/g, ''));
+      if (q) {
+        await sleep(Math.min(q.ms, 700));
+        printHits(q);
+      } else {
+        line(['This demo replays recorded results, so it only knows the questions above.', 'warn']);
+        const div = line(['Search any repo live in your browser: ', 'dim']);
+        const a = document.createElement('a');
+        a.href = 'https://nikhilbhatt-15.github.io/codeseek-chat/';
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = 'codeseek chat ↗';
+        div.append(a);
+      }
+      line(['']);
+      chips.querySelectorAll('button').forEach((b) => (b.disabled = false));
+      busy = false;
+    }
+
+    // Opening scene: the (real) index run, then an idle prompt.
+    line(['PS ~\\clipstash> ', 'ps'], ['codeseek index']);
+    line([`C:\\src\\clipstash: ${data.index.files} files (+${data.index.files} ~0 -0 =0), ${data.index.chunks} chunks embedded in ${data.index.seconds}.0s`]);
+    line(['']);
+    line(['# Ask in plain English. Pick a question below or type one.', 'dim']);
+    line(['']);
+
+    for (const q of data.queries) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('role', 'listitem');
+      b.textContent = q.query;
+      b.addEventListener('click', () => void run(q.query));
+      chips.append(b);
+    }
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      void run(text);
+    });
+  });
+</script>
+
+<style>
+  .term {
+    position: absolute;
+    left: 50%;
+    top: 18px;
+    transform: translateX(-50%);
+    width: min(720px, calc(100% - 24px));
+    height: calc(100% - 84px);
+    display: flex;
+    flex-direction: column;
+    background: #0c0c0c;
+    border: 1px solid #3a3a3a;
+    border-radius: 9px;
+    box-shadow: 0 22px 50px rgb(0 0 0 / 0.55);
+    overflow: hidden;
+    color: #cccccc;
+  }
+  .tabs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 0 0 8px;
+    background: #1f1f1f;
+    font-size: 12px;
+    flex: none;
+  }
+  .tab {
+    background: #0c0c0c;
+    border-radius: 7px 7px 0 0;
+    padding: 7px 26px 9px 10px;
+    align-self: flex-end;
+    color: #e8e8e8;
+  }
+  .tab i {
+    font-style: normal;
+    color: #6cb6ff;
+    margin-right: 4px;
+  }
+  .tab-plus {
+    color: #9a9a9a;
+    padding: 0 6px;
+  }
+  .ctl {
+    margin-left: auto;
+    display: flex;
+  }
+  .ctl b {
+    font-weight: 400;
+    width: 40px;
+    text-align: center;
+    color: #b8b8b8;
+  }
+  .out {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 14px;
+    font: 12.5px/1.5 'Cascadia Mono', 'Cascadia Code', Consolas, var(--mono), monospace;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    scrollbar-width: thin;
+    scrollbar-color: #444 transparent;
+  }
+  .out :global(.ps) { color: #cccccc; }
+  .out :global(.loc) { color: #e070e0; }
+  .out :global(.score) { color: #16c60c; }
+  .out :global(.dim) { color: #767676; }
+  .out :global(.warn) { color: #f9f1a5; }
+  .out :global(a) { color: #6cb6ff; }
+  .ask {
+    flex: none;
+    border-top: 1px solid #262626;
+    background: #111;
+    padding: 8px 12px 10px;
+    display: grid;
+    gap: 8px;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chips :global(button) {
+    font: 12px 'Segoe UI', var(--display), sans-serif;
+    color: #e6e6e6;
+    background: #1d1d1d;
+    border: 1px solid #353535;
+    border-radius: 999px;
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+  .chips :global(button:hover:not(:disabled)) {
+    border-color: #16c60c;
+    color: #fff;
+  }
+  .chips :global(button:disabled) {
+    opacity: 0.45;
+    cursor: wait;
+  }
+  .line {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font: 12.5px 'Cascadia Mono', Consolas, var(--mono), monospace;
+  }
+  .ps { color: #cccccc; white-space: nowrap; }
+  .cmd { color: #f9f1a5; white-space: nowrap; }
+  .line input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #ffffff;
+    font: inherit;
+  }
+  .line input::placeholder { color: #5a5a5a; }
+  @media (max-width: 560px) {
+    .term { top: 10px; width: calc(100% - 16px); }
+    .ps { display: none; }
+    .ctl b { width: 28px; }
+    /* One swipeable row of questions, and unwrapped code like a real terminal. */
+    .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .chips :global(button) { flex: none; }
+    .out { white-space: pre; overflow-x: auto; font-size: 11.5px; }
+  }
+</style>

@@ -1,0 +1,353 @@
+{
+ "repo": "NikhilBhatt-15/clipstash",
+ "commit_note": "Recorded with codeseek v0.1.0 (Ollama backend) on 28 Oct 2026",
+ "index": {
+  "files": 17,
+  "chunks": 138,
+  "seconds": 114
+ },
+ "queries": [
+  {
+   "query": "where is the global hotkey registered",
+   "ms": 542,
+   "hits": [
+    {
+     "path": "src/hotkey.rs",
+     "start": 83,
+     "end": 120,
+     "score": 0.812,
+     "lines": [
+      "impl Hotkey {",
+      "    pub fn parse(s: &str) -> Option<Self> {",
+      "        let mut mods = 0;",
+      "        let mut vk = None;",
+      "        // Split on '+' but allow the key itself to be '+'/'=' by trimming parts.",
+      "        for part in s.split('+').map(str::trim).filter(|p| !p.is_empty()) {",
+      "            match part.to_ascii_lowercase().as_str() {",
+      "                \"ctrl\" | \"control\" => mods |= MOD_CONTROL,",
+      "                \"shift\" => mods |= MOD_SHIFT,"
+     ]
+    },
+    {
+     "path": "docs/prior-art.md",
+     "start": 39,
+     "end": 60,
+     "score": 0.803,
+     "lines": [
+      "- `RegisterHotKey` and `UnregisterHotKey` are imported. A small wrapper",
+      "  (`0x140148120`) registers each configured hotkey against one global window",
+      "  handle, converting stored modifier bits to `MOD_*` flags and recording",
+      "  whether registration succeeded.",
+      "- Two message maps have `WM_HOTKEY` (0x312) entries. The main one",
+      "  (`0x14014e310`) logs \"On Show Ditto HotKey\". If the window is already visible",
+      "  it hides it; otherwise it shows the window.",
+      "",
+      "**Taken:** plain `RegisterHotKey` on the app's own window; pressing the hotkey"
+     ]
+    },
+    {
+     "path": "src/hotkey.rs",
+     "start": 122,
+     "end": 150,
+     "score": 0.798,
+     "lines": [
+      "#[cfg(test)]",
+      "mod tests {",
+      "    use super::*;",
+      "",
+      "    #[test]",
+      "    fn round_trips() {",
+      "        for s in [\"Win+Alt+V\", \"Ctrl+Shift+V\", \"Alt+Space\", \"Ctrl+Alt+F12\", \"Win+`\", \"Ctrl+Shift+0\", \"Ctrl+PageDown\"] {",
+      "            let hk = Hotkey::parse(s).unwrap();",
+      "            assert_eq!(hk.display(), s);"
+     ]
+    }
+   ]
+  },
+  {
+   "query": "how are screenshots saved to disk",
+   "ms": 691,
+   "hits": [
+    {
+     "path": "src/image.rs",
+     "start": 186,
+     "end": 209,
+     "score": 0.804,
+     "lines": [
+      "/// FNV-1a over dimensions and pixels: identical screenshots dedupe even when",
+      "/// they arrive through different clipboard formats.",
+      "pub fn content_hash(img: &Rgba) -> u64 {",
+      "    let mut h: u64 = 0xcbf2_9ce4_8422_2325;",
+      "    let mut feed = |v: u64| {",
+      "        h ^= v;",
+      "        h = h.wrapping_mul(0x0000_0100_0000_01b3);",
+      "    };",
+      "    feed(img.w as u64);"
+     ]
+    },
+    {
+     "path": "src/store.rs",
+     "start": 1,
+     "end": 48,
+     "score": 0.785,
+     "lines": [
+      "//! Clipboard history in SQLite: text and images.",
+      "//!",
+      "//! One row per distinct text or image. Copying something already in history",
+      "//! moves it back to the top instead of adding a duplicate; images are keyed by",
+      "//! a hash of their pixels. Unpinned text and unpinned images are pruned",
+      "//! separately (images are much larger); pinned rows are never pruned and",
+      "//! always sort first.",
+      "",
+      "use rusqlite::{params_from_iter, Connection, OptionalExtension};"
+     ]
+    },
+    {
+     "path": "src/main.rs",
+     "start": 216,
+     "end": 251,
+     "score": 0.783,
+     "lines": [
+      "fn capture() {",
+      "    let a = app();",
+      "    if unsafe { GetClipboardSequenceNumber() } == a.ignore_seq.get() {",
+      "        return;",
+      "    }",
+      "    let (respect_privacy, save_images) = {",
+      "        let s = a.settings.borrow();",
+      "        (s.respect_privacy, s.save_images)",
+      "    };"
+     ]
+    }
+   ]
+  },
+  {
+   "query": "detect whether copied text is source code",
+   "ms": 527,
+   "hits": [
+    {
+     "path": "src/classify.rs",
+     "start": 280,
+     "end": 308,
+     "score": 0.783,
+     "lines": [
+      "#[cfg(test)]",
+      "mod tests {",
+      "    use super::*;",
+      "",
+      "    #[test]",
+      "    fn detects_code() {",
+      "        let rust = \"fn main() {\\n    let x = 5;\\n    println!(\\\"{x}\\\");\\n}\";",
+      "        let py = \"def add(a, b):\\n    return a + b\\n\";",
+      "        let js = \"const f = (x) => x * 2;\";"
+     ]
+    },
+    {
+     "path": "src/classify.rs",
+     "start": 144,
+     "end": 183,
+     "score": 0.776,
+     "lines": [
+      "    for marker in [\"=>\", \"::\", \"->\", \"!=\", \"==\", \"&&\", \"||\", \"();\", \"</\", \"/>\", \"${\", \"--\"] {",
+      "        if s.contains(marker) {",
+      "            score += 0.4;",
+      "        }",
+      "    }",
+      "",
+      "    // Prose: long lines of mostly words ending in sentence punctuation.",
+      "    let sentences = lines.iter().filter(|l| {",
+      "        let e = l.trim_end();"
+     ]
+    },
+    {
+     "path": "src/classify.rs",
+     "start": 36,
+     "end": 73,
+     "score": 0.773,
+     "lines": [
+      "pub fn classify(text: &str) -> Kind {",
+      "    let t = text.trim();",
+      "    let single = !t.contains('\\n');",
+      "    if single {",
+      "        if let Some(c) = parse_color(t) {",
+      "            return c;",
+      "        }",
+      "        if is_link(t) {",
+      "            return Kind::Link;"
+     ]
+    }
+   ]
+  },
+  {
+   "query": "database schema for clipboard history",
+   "ms": 503,
+   "hits": [
+    {
+     "path": "src/store.rs",
+     "start": 1,
+     "end": 48,
+     "score": 0.82,
+     "lines": [
+      "//! Clipboard history in SQLite: text and images.",
+      "//!",
+      "//! One row per distinct text or image. Copying something already in history",
+      "//! moves it back to the top instead of adding a duplicate; images are keyed by",
+      "//! a hash of their pixels. Unpinned text and unpinned images are pruned",
+      "//! separately (images are much larger); pinned rows are never pruned and",
+      "//! always sort first.",
+      "",
+      "use rusqlite::{params_from_iter, Connection, OptionalExtension};"
+     ]
+    },
+    {
+     "path": "src/store.rs",
+     "start": 50,
+     "end": 82,
+     "score": 0.818,
+     "lines": [
+      "pub fn now_ms() -> i64 {",
+      "    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0)",
+      "}",
+      "",
+      "impl Store {",
+      "    pub fn open(path: &Path, keep: usize) -> rusqlite::Result<Self> {",
+      "        Self::init(Connection::open(path)?, keep)",
+      "    }",
+      ""
+     ]
+    },
+    {
+     "path": "src/popup.rs",
+     "start": 175,
+     "end": 221,
+     "score": 0.773,
+     "lines": [
+      "pub fn create() -> HWND {",
+      "    unsafe {",
+      "        let hinst = GetModuleHandleW(null());",
+      "        let class = w!(\"ClipStashPopup\");",
+      "        let wc = WNDCLASSEXW {",
+      "            cbSize: size_of::<WNDCLASSEXW>() as u32,",
+      "            style: CS_DROPSHADOW | CS_DBLCLKS,",
+      "            lpfnWndProc: Some(wndproc),",
+      "            hInstance: hinst,"
+     ]
+    }
+   ]
+  },
+  {
+   "query": "follow the windows light or dark theme",
+   "ms": 575,
+   "hits": [
+    {
+     "path": "src/theme.rs",
+     "start": 113,
+     "end": 141,
+     "score": 0.811,
+     "lines": [
+      "/// The accent the Settings app shows. Dark mode uses a lighter shade from the",
+      "/// accent palette for contrast, as Windows itself does.",
+      "pub fn system_accent(dark: bool) -> Rgb {",
+      "    let mut palette = [0u8; 32];",
+      "    let mut len = palette.len() as u32;",
+      "    let r = unsafe {",
+      "        RegGetValueW(",
+      "            HKEY_CURRENT_USER,",
+      "            w!(\"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\Accent\"),"
+     ]
+    },
+    {
+     "path": "src/theme.rs",
+     "start": 102,
+     "end": 111,
+     "score": 0.81,
+     "lines": [
+      "fn read_dword(key: *const u16, value: *const u16) -> Option<u32> {",
+      "    let mut data = 0u32;",
+      "    let mut len = size_of::<u32>() as u32;",
+      "    let r = unsafe { RegGetValueW(HKEY_CURRENT_USER, key, value, RRF_RT_REG_DWORD, null_mut(), &mut data as *mut u32 as _, &mut len) };",
+      "    (r == 0).then_some(data)",
+      "}",
+      "",
+      "pub fn system_prefers_dark() -> bool {",
+      "    read_dword(w!(\"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Themes\\\\Personalize\"), w!(\"AppsUseLightTheme\")) == Some(0)"
+     ]
+    },
+    {
+     "path": "src/theme.rs",
+     "start": 33,
+     "end": 73,
+     "score": 0.796,
+     "lines": [
+      "#[derive(Clone, Copy, Debug)]",
+      "pub struct Theme {",
+      "    pub dark: bool,",
+      "    /// Window background.",
+      "    pub bg: Rgb,",
+      "    /// Search field, hover rows, controls.",
+      "    pub surface: Rgb,",
+      "    /// Preview pane background.",
+      "    pub inset: Rgb,"
+     ]
+    }
+   ]
+  },
+  {
+   "query": "give focus back to the window the user was typing in",
+   "ms": 562,
+   "hits": [
+    {
+     "path": "src/focus.rs",
+     "start": 1,
+     "end": 29,
+     "score": 0.844,
+     "lines": [
+      "//! Remembering the window the user was typing in, giving focus back to it,",
+      "//! and pasting into it.",
+      "//!",
+      "//! Same approach as Ditto's ExternalWindowTracker: save the foreground window",
+      "//! and its focused child when the popup opens. Afterwards call",
+      "//! SetForegroundWindow on the window, attach to its input queue and SetFocus",
+      "//! the child, so the paste lands in the same text box and not just the same",
+      "//! top-level window.",
+      ""
+     ]
+    },
+    {
+     "path": "src/focus.rs",
+     "start": 31,
+     "end": 57,
+     "score": 0.819,
+     "lines": [
+      "impl Target {",
+      "    pub fn capture() -> Self {",
+      "        unsafe {",
+      "            let window = GetForegroundWindow();",
+      "            let mut info: GUITHREADINFO = zeroed();",
+      "            info.cbSize = size_of::<GUITHREADINFO>() as u32;",
+      "            let tid = GetWindowThreadProcessId(window, null_mut());",
+      "            if tid == 0 || GetGUIThreadInfo(tid, &mut info) == 0 {",
+      "                return Self { window, focus: null_mut(), caret: None };"
+     ]
+    },
+    {
+     "path": "src/focus.rs",
+     "start": 80,
+     "end": 117,
+     "score": 0.815,
+     "lines": [
+      "fn key_down(vk: VIRTUAL_KEY) -> bool {",
+      "    unsafe { (GetAsyncKeyState(vk as i32) as u16 & 0x8000) != 0 }",
+      "}",
+      "",
+      "fn key(vk: VIRTUAL_KEY, up: bool) -> INPUT {",
+      "    INPUT {",
+      "        r#type: INPUT_KEYBOARD,",
+      "        Anonymous: INPUT_0 {",
+      "            ki: KEYBDINPUT { wVk: vk, wScan: 0, dwFlags: if up { KEYEVENTF_KEYUP } else { 0 }, time: 0, dwExtraInfo: 0 },"
+     ]
+    }
+   ]
+  }
+ ]
+}
