@@ -7,7 +7,7 @@ asset: hop.exe
 platform: Windows 10/11
 language: Rust
 genre: Utility · Launcher
-poster: { bg: '#10141f', ink: '#eef3ff', accent: '#60cdff', motif: seek }
+poster: { bg: '#1c1020', ink: '#fbeef3', accent: '#ff8a5c', motif: hop }
 screenshots:
   - { src: /products/hop-dark.png, alt: hop showing an app and file results for "photoshop" }
   - { src: /products/hop-tips.png, alt: Tips in the empty box on first run }
