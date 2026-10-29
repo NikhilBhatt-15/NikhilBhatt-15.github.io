@@ -18,6 +18,10 @@ const products = defineCollection({
     language: z.string(),
     kind: z.enum(['download', 'web', 'self-host', 'coming-soon']).default('download'),
     live: z.url().optional(), // for kind: web, the URL people play/use it at
+    // for kind: web, whether it's something you play or an app you sign in to and use
+    liveKind: z.enum(['game', 'app']).default('game'),
+    liveNote: z.string().optional(), // for kind: web, the "Heads up" note on the ticket
+    liveSub: z.string().optional(), // for kind: web, the small line under the ticket title
     command: z.string().default('docker compose up'), // for kind: self-host, the start command on the ticket
     requires: z.string().optional(), // runtime it needs, shown on the poster; omit for standalone apps
     badge: z.string().optional(), // small label on the card, e.g. New

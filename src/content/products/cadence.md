@@ -3,9 +3,12 @@ name: cadence
 tagline: Keep a steady posting rhythm on X and LinkedIn without living in the feed.
 order: 9
 repo: NikhilBhatt-15/cadence
-kind: self-host
-command: npm run dev
-platform: Vercel
+kind: web
+live: https://cadence-one-ruby.vercel.app
+liveKind: app
+liveSub: sign in with GitHub · works on phones
+liveNote: Drafting needs an AI key (a free Gemini key works) and posting needs your X account. Both are connected in Settings and stored encrypted.
+platform: Web
 language: TypeScript
 genre: Web app · Social scheduling
 badge: New
@@ -22,7 +25,7 @@ install:
   - 'Fill in `.env.local`: the database URL, three random secrets, a GitHub OAuth app for sign-in and an X developer app (the free tier is enough). The file explains each one.'
   - 'Run `npm run db:push`, then `npm run dev`, and open **http://localhost:3000**. To deploy, import the repo on Vercel and add the same variables.'
 usage:
-  - 'Sign in with GitHub, connect X under **Settings**, and add an AI key. A free Gemini key works; OpenAI, Anthropic and any OpenAI-compatible API do too.'
+  - 'Open [cadence-one-ruby.vercel.app](https://cadence-one-ruby.vercel.app), sign in with GitHub, connect X under **Settings**, and add an AI key. A free Gemini key works; OpenAI, Anthropic and any OpenAI-compatible API do too.'
   - 'In **Write**, pick a kind of post and where to start from: an idea, a GitHub repo, a link, notes, or a post to rewrite. Press **Ctrl+Enter** to draft it.'
   - 'Turn on **Write as a thread** for X threads. Every part gets its own character ring.'
   - 'On **Schedule**, drag drafts onto a day to schedule them, or drag posts between days to move them. Undo is in the toast.'
