@@ -18,6 +18,7 @@ const products = defineCollection({
     language: z.string(),
     kind: z.enum(['download', 'web', 'self-host', 'coming-soon']).default('download'),
     live: z.url().optional(), // for kind: web, the URL people play/use it at
+    command: z.string().default('docker compose up'), // for kind: self-host, the start command on the ticket
     requires: z.string().optional(), // runtime it needs, shown on the poster; omit for standalone apps
     badge: z.string().optional(), // small label on the card, e.g. New
     genre: z.string(), // e.g. "Utility · Productivity"

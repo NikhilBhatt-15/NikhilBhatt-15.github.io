@@ -99,8 +99,8 @@ const status = p.kind === 'coming-soon' ? 'COMING SOON' : 'NOW SHOWING';
           ) : p.kind === 'self-host' ? (
             <div class="ticket">
               <div class="t-main">
-                <span class="mono t-admit">Self-hosted · runs on Docker</span>
-                <span class="t-file">docker compose up</span>
+                <span class="mono t-admit">Self-hosted · runs on {p.platform}</span>
+                <span class="t-file">{p.command}</span>
                 <span class="mono dim t-sub">Clone the repo and start it. Steps below.</span>
                 <a class="btn primary" href={gh}>
                   Get the source →

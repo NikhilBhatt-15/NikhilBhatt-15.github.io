@@ -24,7 +24,7 @@ const titleY = 512;
 const taglineY = titleY - nameSize * 0.74 - 16;
 const tail =
   kind === 'web' ? 'NOW PLAYING ONLINE · FREE ADMISSION'
-  : kind === 'self-host' ? 'RUNS ON DOCKER'
+  : kind === 'self-host' ? `RUNS ON ${platform.toUpperCase()}`
   : kind === 'coming-soon' ? 'IN DEVELOPMENT'
   : `${requires ? `REQUIRES ${requires.toUpperCase()}` : 'NO RUNTIME REQUIRED'} · ${version ? `RELEASE ${version.toUpperCase()}` : 'IN DEVELOPMENT'}`;
 const billing = `A NIKHIL BHATT PRODUCTION · WRITTEN IN ${language.toUpperCase()} · ${genre.toUpperCase()} · ${tail}`;
@@ -170,6 +170,25 @@ const codeLines = [
           <rect x="44" y="322" width="96" height="84" rx="16" fill={bg} stroke={ink} stroke-opacity="0.85" stroke-width="5" />
           <path d="M60 390 H124" stroke={ink} stroke-opacity="0.25" stroke-width="5" />
           <path d="M84 344 L98 362" stroke={accent} stroke-width="9" />
+        </g>
+      )
+    }
+    {
+      motif === 'cadence' && (
+        <g>
+          {[70, 120, 95, 170, 140, 215, 270].map((h, i) => (
+            <rect x={62 + i * 42} y={350 - h} width="26" height={h} rx="13" fill={i === 6 ? accent : ink} fill-opacity={i === 6 ? 1 : 0.14 + i * 0.05} stroke="none" />
+          ))}
+          <path d="M60 366 H340" stroke={ink} stroke-opacity="0.3" stroke-width="2" stroke-dasharray="1 9" />
+          <path d="M222 60 V366" stroke="#ff7a2f" stroke-width="3" />
+          <circle cx="222" cy="60" r="9" fill="#ff7a2f" stroke="none" />
+          <circle cx="222" cy="60" r="18" fill="#ff7a2f" fill-opacity="0.2" stroke="none" />
+          <g transform="translate(92 110)">
+            <rect width="88" height="48" rx="10" fill={ink} stroke="none" />
+            <rect x="12" y="13" width="56" height="6" rx="3" fill={bg} fill-opacity="0.75" stroke="none" />
+            <rect x="12" y="27" width="38" height="6" rx="3" fill={bg} fill-opacity="0.4" stroke="none" />
+            <path d="M24 48 l-4 12 l14 -12 z" fill={ink} stroke="none" />
+          </g>
         </g>
       )
     }
